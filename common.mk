@@ -1,12 +1,13 @@
 # Common definitions
 
-BIN := $(GDK)/bin
-LIB := $(GDK)/lib
-XGCC:= $(GDK)/x68k-gcc
+BIN := $(GDKPLUS)/bin
+LIB := $(GDKPLUS)/lib
+XGCC:= $(GDKPLUS)/x68k-gcc
 
-SRC_LIB 	 := $(GDK)/src
-RES_LIB 	 := $(GDK)/res
-INCLUDE_LIB  := $(GDK)/inc
+SRC_LIB 	 := $(GDKPLUS)/src
+RES_LIB 	 := $(GDKPLUS)/res
+INCLUDE_LIB  := $(GDKPLUS)/inc
+
 MAKEFILE_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 MAKEFILE_DIR := $(subst \,/,$(MAKEFILE_DIR))
 
@@ -32,7 +33,7 @@ ifeq ($(OS),Windows_NT)
 	VERSION := $(shell $(CC) -dumpversion)
 	PLUGIN  := $(XGCC)/libexec/gcc/$(PREFIX)/$(VERSION)/liblto_plugin
 else
-	ifeq ($(SGDK_DOCKER),y)
+	ifeq ($(SGDKPLUS_DOCKER),y)
 		# Linux docker
 		SHELL   := sh
 		RM 	    := rm

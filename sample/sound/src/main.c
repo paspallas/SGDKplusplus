@@ -1,5 +1,4 @@
 #include "genesis.h"
-
 #include "resources.h"
 
 #define NUM_DRIVER      5

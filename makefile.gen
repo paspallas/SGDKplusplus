@@ -2,10 +2,10 @@ MAKEFILE_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 MAKEFILE_DIR := $(subst \,/,$(MAKEFILE_DIR))
 
 ifneq ("$(wildcard $(MAKEFILE_DIR)bin/rescomp.jar)","")
-    GDK := $(patsubst %/,%,$(MAKEFILE_DIR))
+    GDKPLUS := $(patsubst %/,%,$(MAKEFILE_DIR))
 endif
 
-include $(GDK)/common.mk
+include $(GDKPLUS)/common.mk
 
 SRC := src
 RES := res
@@ -51,11 +51,14 @@ DEFAULT_FLAGS 	:= $(EXTRA_FLAGS) 			 \
 				   -Wno-shift-negative-value \
 				   -Wno-main 				 \
 				   -Wno-unused-parameter     \
-				   -fno-builtin 			 \
 				   -fdiagnostics-color=always\
-				   -ffunction-sections 		 \
-				   -fdata-sections 	  		 \
-				   $(INCS)
+                   -fno-builtin              \
+                   -fdata-sections           \
+                   -ffunction-sections       \
+                   -fno-web                  \
+                   -fno-gcse                 \
+				   $(INCS)                   \
+                   -L$(GDKPLUS)/lib
 
 FLAGSZ80:= -i$(SRC) -i$(INCLUDE) -i$(RES) -i$(SRC_LIB) -i$(INCLUDE_LIB)
 
@@ -63,24 +66,20 @@ release: FLAGS= $(DEFAULT_FLAGS) 		\
 				-fuse-linker-plugin 	\
 				-flto 					\
 				-O3 					\
-				-fno-web 				\
-				-fno-gcse 				\
 				-fno-unit-at-a-time 	\
 				-fomit-frame-pointer
 
-release: LIBMD= $(LIB)/libmd.a
+release: LIBMD= -lmd
 release: pre-build out/rom.bin out/symbol.txt
 
 debug: FLAGS= $(DEFAULT_FLAGS) -O1 -ggdb -DDEBUG=1
-debug: LIBMD= $(LIB)/libmd_debug.a
+debug: LIBMD= -lmd_debug
 debug: pre-build out/rom.bin out/rom.out out/symbol.txt
 
 asm: FLAGS= $(DEFAULT_FLAGS) 			\
 				-fuse-linker-plugin 	\
 				-flto 					\
 				-O3 					\
-				-fno-web 				\
-				-fno-gcse 				\
 				-fno-unit-at-a-time 	\
 				-fomit-frame-pointer   	\
 				-S
@@ -114,12 +113,12 @@ cleanobj:
 	@$(RM) -f $(OBJS) out/sega.o out/rom_head.bin out/rom_head.o out/rom.out
 
 distclean: cleanobj cleanres cleanlst cleandep cleantmp
-	@$(RM) -f out.lst out/symbol.txt out/rom.nm out/rom.wch
+	@$(RM) -f out.lst out/symbol.txt out/rom.nm out/rom.wch out/rom.map
 	@$(RM) -rf out/src out/res
 
 clean: cleanobj cleanres cleanlst cleandep
 	@$(ECHO) " Clean artifacts"
-	@$(RM) -f out.lst out/symbol.txt out/rom.nm out/rom.wch out/rom.bin
+	@$(RM) -f out.lst out/symbol.txt out/rom.nm out/rom.wch out/rom.bin out/rom.map
 
 cleanrelease: clean
 
@@ -138,7 +137,6 @@ pre-build:
 	@$(MKDIR) -p $(SRC)/boot
 	@$(MKDIR) -p out
 
-
 out/rom.bin: out/rom.out
 	@$(OBJCPY) -O binary $< $@
 	@$(SIZEBND) $@ -sizealign 131072 -checksum
@@ -147,7 +145,9 @@ out/symbol.txt: out/rom.out
 	@$(NM) --plugin=$(PLUGIN) -n $< > $@
 
 out/rom.out: out/sega.o $(OBJS)
-	@$(CC) -n -T $(GDK)/md.ld -nostdlib $^ $(LIBMD) -lgcc -o $@ -Wl,--gc-sections
+	@$(CC) $(FLAGS) -n -T $(GDKPLUS)/md.ld \
+    -nostartfiles -nodefaultlibs -flinker-output=exec $^ $(LIBMD) -lgcc -o $@ \
+	-Wl,--gc-sections -Wl,-Map,out/rom.map -Wl,--check-sections
 
 out/sega.o: $(SRC)/boot/sega.s out/rom_head.bin
 	@$(CC) -x assembler-with-cpp $(DEFAULT_FLAGS) -c $(SRC)/boot/sega.s -o $@

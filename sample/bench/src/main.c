@@ -51,7 +51,7 @@ int main()
 
         testNum = 0;
         globalScore = 0;
-
+#if 0
         preTest("Memory set test", testNum);
         score = executeMemsetTest(detailledScores[testNum]);
         scores[testNum] = score;
@@ -107,7 +107,7 @@ int main()
         postTest("Bitmap mode test", score, testNum);
         globalScore += score;
         testNum++;
-
+#endif
         preTest("Sprite test", testNum);
         score = executeSpritesTest(detailledScores[testNum]);
         scores[testNum] = score;

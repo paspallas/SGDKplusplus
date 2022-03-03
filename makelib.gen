@@ -2,13 +2,15 @@ MAKEFILE_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 MAKEFILE_DIR := $(subst \,/,$(MAKEFILE_DIR))
 
 ifneq ("$(wildcard $(MAKEFILE_DIR)bin/rescomp.jar)","")
-    GDK := $(patsubst %/,%,$(MAKEFILE_DIR))
+    GDKPLUS := $(patsubst %/,%,$(MAKEFILE_DIR))
 endif
 
-include $(GDK)/common.mk
+include $(GDKPLUS)/common.mk
 
-SOURCES := $(shell $(FIND) $(SRC_LIB) -type d -wholename "$(SRC_LIB)/boot" -prune -o \
-			-type d -wholename "$(SRC_LIB)/ext/cplusplus" -prune -o -type f)
+SOURCES := $(shell $(FIND) $(SRC_LIB) \
+			-type d -wholename "$(SRC_LIB)/boot" -prune -o \
+			-type d -wholename "$(SRC_LIB)/ext/cplusplus" -prune -o \
+			-type f)
 
 SRC_LIB_C   := $(filter %.c, $(SOURCES))
 SRC_LIB_S   := $(filter %.s, $(SOURCES))
@@ -42,10 +44,10 @@ release: FLAGS_LIB= $(DEFAULT_FLAGS_LIB)\
 				-fuse-linker-plugin 	\
 				-flto 					\
 				-O3 					\
-				-fno-web 				\
+                -fno-web 				\
 				-fno-gcse 				\
 				-fno-unit-at-a-time 	\
-				-fomit-frame-pointer
+				-fomit-frame-pointer    \
 
 release: $(INCLUDE_LIB)/genesis.h.gch $(LIB)/libmd.a $(LIB)/libsys.a $(LIB)/libcpp.a
 

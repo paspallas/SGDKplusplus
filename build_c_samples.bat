@@ -2,10 +2,10 @@
 :: The library must be compiled with ENABLE_MEGAWIFI set to 1
 
 ECHO off
-SET "GDK=%cd:\=/%"
-SET "GDK_WIN=%cd%"
-SET "XGCC_WIN=%GDK_WIN%\x68k-gcc\bin"
-SET "PATH=%GDK_WIN%\bin;%XGCC_WIN%;%PATH%"
+SET "GDKPLUS=%cd:\=/%"
+SET "GDKPLUS_WIN=%cd%"
+SET "XGCC_WIN=%GDKPLUS_WIN%\x68k-gcc\bin"
+SET "PATH=%GDKPLUS_WIN%\bin;%XGCC_WIN%;%PATH%"
 
 set DIRS=sample\basics\hello-world ^
     sample\basics\image ^
@@ -14,7 +14,6 @@ set DIRS=sample\basics\hello-world ^
     sample\bitmap\partic ^
     sample\demo\bad-apple ^
     sample\demo\starfield-donut ^
-    sample\fx\h-int\scaling ^
     sample\fx\h-int\wobble ^
     sample\fx\hilight-shadow ^
     sample\fx\scroll\linescroll ^
@@ -27,6 +26,6 @@ set DIRS=sample\basics\hello-world ^
 
 for /D %%i in (%DIRS%) do (
     echo "%%i"
-    %GDK_WIN%\bin\make -C "%%i" release -f %GDK_WIN%\makefile.gen
-    %GDK_WIN%\bin\make -C "%%i" distclean -f %GDK_WIN%\makefile.gen 
+    %GDKPLUS_WIN%\bin\make -C "%%i" release -f %GDKPLUS_WIN%\makefile.gen
+    %GDKPLUS_WIN%\bin\make -C "%%i" distclean -f %GDKPLUS_WIN%\makefile.gen 
 )  

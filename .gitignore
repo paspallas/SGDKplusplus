@@ -47,3 +47,4 @@ tools/rescomp/format
 tools/rescomp/rescomp.jar
 tools/xgm rom builder/bin
 **/.DS_Store
+.vscode

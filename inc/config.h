@@ -16,16 +16,20 @@
  *      Log disable
  */
 #define LOG_LEVEL_DISABLE   0
+
 /**
  *  \brief
  *      Log for error only
  */
 #define LOG_LEVEL_ERROR     1
+
 /**
  *  \brief
  *      Log for error and warning
  */
+
 #define LOG_LEVEL_WARNING   2
+
 /**
  *  \brief
  *      Log for error, warning and info (as memory allocation)

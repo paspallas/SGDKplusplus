@@ -28,7 +28,7 @@ public class ImageProcessor implements Processor
             System.out.println("Wrong IMAGE definition");
             System.out.println("IMAGE name \"file\" [compression [mapopt [mapbase]]]");
             System.out.println("  name          Image variable name");
-            System.out.println("  file          the image to convert to Image structure (should be a 8bpp .bmp or .png)");
+            System.out.println("  file          the image to convert to Image structure (indexed colors BMP or PNG image)");
             System.out.println("  compression   compression type, accepted values:");
             System.out.println("                 -1 / BEST / AUTO = use best compression");
             System.out.println("                  0 / NONE        = no compression (default)");
