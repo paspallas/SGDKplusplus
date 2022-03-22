@@ -10,7 +10,6 @@
 #ifndef _TYPES_H_
 #define _TYPES_H_
 
-
 /**
  *  \brief
  *      FALSE define (equivalent to 0).
@@ -151,7 +150,7 @@ typedef volatile u16 vu16;
  */
 typedef volatile u32 vu32;
 
-
+#ifndef __cplusplus
 #if !defined(uint8_t) && !defined(__int8_t_defined)
 #define uint8_t     u8
 #define int8_t      s8
@@ -164,7 +163,7 @@ typedef volatile u32 vu32;
 #define uint32_t    u32
 #define int32_t     s32
 #endif
-
+#endif
 
 /**
  *  \typedef fix16
@@ -269,6 +268,7 @@ u32 getZeroU32();
  *      number of bit rotation
  */
 u8  rol8(u8 value, u16 number);
+
 /**
  *  \brief
  *      ROL instruction for short (16 bit) value
@@ -279,6 +279,7 @@ u8  rol8(u8 value, u16 number);
  *      number of bit rotation
  */
 u16 rol16(u16 value, u16 number);
+
 /**
  *  \brief
  *      ROL instruction for long (32 bit) value
@@ -289,6 +290,7 @@ u16 rol16(u16 value, u16 number);
  *      number of bit rotation
  */
 u32 rol32(u32 value, u16 number);
+
 /**
  *  \brief
  *      ROR instruction for byte (8 bit) value
@@ -299,6 +301,7 @@ u32 rol32(u32 value, u16 number);
  *      number of bit rotation
  */
 u8  ror8(u8 value, u16 number);
+
 /**
  *  \brief
  *      ROR instruction for short (16 bit) value
@@ -309,6 +312,7 @@ u8  ror8(u8 value, u16 number);
  *      number of bit rotation
  */
 u16 ror16(u16 value, u16 number);
+
 /**
  *  \brief
  *      ROR instruction for long (32 bit) value

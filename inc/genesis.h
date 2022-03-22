@@ -21,7 +21,12 @@ extern "C" {
 #include "tools.h"
 
 #include "font.h"
+
+#ifndef __cplusplus
 #include "string.h"
+#else
+#include "str.h"
+#endif
 
 #include "tab_cnv.h"
 
