@@ -1,7 +1,9 @@
 #ifndef _GENESIS_H_
 #define _GENESIS_H_
 
-#define SGDK_VERSION    1.70
+#define SGDK_VERSION        170
+#define SGDK_VERSION_MINOR  70
+#define SGDK_VERSION_MAJOR  1
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +22,9 @@ extern "C" {
 #include "memory.h"
 #include "tools.h"
 
+#include "pool.h"
+#include "object.h"
+
 #include "font.h"
 
 #ifndef __cplusplus
@@ -37,7 +42,6 @@ extern "C" {
 #include "vdp_bg.h"
 #include "vdp_spr.h"
 #include "vdp_tile.h"
-#include "vdp_pal.h"
 
 #include "pal.h"
 

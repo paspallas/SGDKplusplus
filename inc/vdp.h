@@ -209,55 +209,51 @@
  *  \brief
  *      Maximum number of tile in VRAM (related to TILE_SPACE).
  */
-#define TILE_MAX_NUM             (TILE_SPACE / TILE_SIZE)
+#define TILE_MAX_NUM            (TILE_SPACE / TILE_SIZE)
 /**
  *  \brief
  *      Maximum tile index in VRAM (related to TILE_MAXNUM).
  */
-#define TILE_MAX_INDEX           (TILE_MAXNUM - 1)
+#define TILE_MAX_INDEX          (TILE_MAXNUM - 1)
 /**
  *  \brief
  *      System base tile index in VRAM.
  */
-#define TILE_SYSTEM_INDEX        0x0000
+#define TILE_SYSTEM_INDEX       0x0000
 /**
  *  \brief
  *      Number of system tile.
  */
-#define TILE_SYSTEM_LENGTH       16
+#define TILE_SYSTEM_LENGTH      16
 /**
  *  \deprecated Use TILE_SYSTEMLENGTH instead.
  */
-#define TILE_SYSTEM_LENGHT       TILE_SYSTEM_LENGTH
+#define TILE_SYSTEM_LENGHT      TILE_SYSTEM_LENGTH
 /**
  *  \brief
  *      User base tile index.
  */
-#define TILE_USER_INDEX          (TILE_SYSTEM_INDEX + TILE_SYSTEM_LENGTH)
+#define TILE_USER_INDEX         (TILE_SYSTEM_INDEX + TILE_SYSTEM_LENGTH)
 /**
  *  \brief
  *      Font base tile index.
  */
-#define TILE_FONTINDEX          (TILE_MAX_NUM - FONT_LEN)
+#define TILE_FONT_INDEX         (TILE_MAX_NUM - FONT_LEN)
 /**
  *  \brief
  *      Sprite engine base tile index (equal TILE_FONTINDEX if Sprite Engine is not initialized).
  */
-#define TILE_SPRITEINDEX        (TILE_FONT_INDEX - spriteVramSize)
+#define TILE_SPRITE_INDEX       (TILE_FONT_INDEX - spriteVramSize)
 /**
  *  \brief
  *      Number of available user tile.
  */
-#define TILE_USERLENGTH         ((userTileMaxIndex - TILE_USER_INDEX) + 1)
-/**
- *  \deprecated Use TILE_USERLENGTH instead.
- */
-#define TILE_USERLENGHT         TILE_USER_LENGTH
+#define TILE_USER_LENGTH        ((userTileMaxIndex - TILE_USER_INDEX) + 1)
 /**
  *  \brief
  *      Maximum tile index in VRAM reserved for user (for background and user managed sprites)
  */
-#define TILE_USERMAXINDEX       userTileMaxIndex
+#define TILE_USER_MAX_INDEX     userTileMaxIndex
 /**
  *  \brief
  *      System tile address in VRAM.
@@ -467,7 +463,7 @@ extern u16 windowWidthSft;
  *
  * Reset VDP registers, reset sprites then call #VDP_resetScreen() to reset BG and palettes.
  */
-void VDP_init();
+void VDP_init(void);
 
 /**
  *  \brief
@@ -475,7 +471,7 @@ void VDP_init();
  *
  *  Reset VRAM (clear BG planes and reload font), reset scrolls and reset palettes (set to default grey / red / green / blue ramps).
  */
-void VDP_resetScreen();
+void VDP_resetScreen(void);
 
 /**
  *  \brief
@@ -501,14 +497,14 @@ void VDP_setReg(u16 reg, u8 value);
  *  \brief
  *      Returns VDP enable state.
  */
-u8   VDP_getEnable();
+bool VDP_getEnable(void);
 /**
  *  \brief
  *      Set VDP enable state.
  *
  *  You can temporary disable VDP to speed up VDP memory transfert.
  */
-void VDP_setEnable(u8 value);
+void VDP_setEnable(bool value);
 
 /**
  *  \brief
@@ -516,7 +512,7 @@ void VDP_setEnable(u8 value);
  *
  *  312 for PAL system and 262 for NTSC system.
  */
-u16  VDP_getScanlineNumber();
+u16  VDP_getScanlineNumber(void);
 /**
  *  \brief
  *      Returns vertical screen resolution.
@@ -524,49 +520,49 @@ u16  VDP_getScanlineNumber();
  *  Always returns 224 on NTSC system as they only support this mode.<br>
  *  PAL system supports 240 pixels mode.
  */
-u16  VDP_getScreenHeight();
+u16  VDP_getScreenHeight(void);
 /**
  *  \brief
  *      Set vertical resolution to 224 pixels.
  *
  *  This is the only accepted mode for NTSC system.
  */
-void VDP_setScreenHeight224();
+void VDP_setScreenHeight224(void);
 /**
  *  \brief
  *      Set vertical resolution to 240 pixels.
  *
  *  Only work on PAL system.
  */
-void VDP_setScreenHeight240();
+void VDP_setScreenHeight240(void);
 /**
  *  \brief
  *      Returns horizontal screen resolution.
  *
  *  Returns 320 or 256 depending current horizontal resolution mode.
  */
-u16  VDP_getScreenWidth();
+u16  VDP_getScreenWidth(void);
 /**
  *  \brief
  *      Set horizontal resolution to 256 pixels.
  */
-void VDP_setScreenWidth256();
+void VDP_setScreenWidth256(void);
 /**
  *  \brief
  *      Set horizontal resolution to 320 pixels.
  */
-void VDP_setScreenWidth320();
+void VDP_setScreenWidth320(void);
 
 /**
  *  \brief
  *      Return background plane width (in tile).
  */
-u16  VDP_getPlaneWidth();
+u16  VDP_getPlaneWidth(void);
 /**
  *  \brief
  *      Return background plane height (in tile).
  */
-u16  VDP_getPlaneHeight();
+u16  VDP_getPlaneHeight(void);
 /**
  *  \brief
  *      Set background plane size (in tile).<br>
@@ -598,7 +594,7 @@ void VDP_setPlanSize(u16 w, u16 h);
  *
  *  \see VDP_setScrollingMode for more informations about scrolling mode.
  */
-u8 VDP_getHorizontalScrollingMode();
+u8 VDP_getHorizontalScrollingMode(void);
 /**
  *  \brief
  *      Returns plane vertical scrolling mode.
@@ -607,7 +603,7 @@ u8 VDP_getHorizontalScrollingMode();
  *
  *  \see VDP_setScrollingMode for more informations about scrolling mode.
  */
-u8 VDP_getVerticalScrollingMode();
+u8 VDP_getVerticalScrollingMode(void);
 /**
  *  \brief
  *      Set plane scrolling mode.
@@ -634,7 +630,7 @@ void VDP_setScrollingMode(u16 hscroll, u16 vscroll);
  *  \brief
  *      Returns the background color index.
  */
-u8 VDP_getBackgroundColor();
+u8 VDP_getBackgroundColor(void);
 /**
  *  \brief
  *      Set the background color index.
@@ -645,7 +641,7 @@ void VDP_setBackgroundColor(u8 value);
  *  \brief
  *      Returns auto increment register value.
  */
-u8   VDP_getAutoInc();
+u8   VDP_getAutoInc(void);
 /**
  *  \brief
  *      Set auto increment register value.
@@ -656,7 +652,7 @@ void VDP_setAutoInc(u8 value);
  *  \brief
  *      Returns DMA enabled state
  */
-u8 VDP_getDMAEnabled();
+u8 VDP_getDMAEnabled(void);
 /**
  *  \brief
  *      Set DMA enabled state.
@@ -668,7 +664,7 @@ void VDP_setDMAEnabled(u8 value);
  *  \brief
  *      Returns HV counter latching on INT2 (used for light gun)
  */
-u8 VDP_getHVLatching();
+u8 VDP_getHVLatching(void);
 /**
  *  \brief
  *      Set HV counter latching on INT2 (used for light gun)
@@ -700,7 +696,7 @@ void VDP_setHilightShadow(u8 value);
  *  \brief
  *      Get Horizontal interrupt counter value.
  */
-u8   VDP_getHIntCounter();
+u8   VDP_getHIntCounter(void);
 /**
  *  \brief
  *      Set Horizontal interrupt counter value.
@@ -714,42 +710,42 @@ void VDP_setHIntCounter(u8 value);
  *  \brief
  *      Get VRAM address (location) of BG A tilemap.
  */
-u16 VDP_getBGAAddress();
+u16 VDP_getBGAAddress(void);
 /**
  *  \brief
  *      Get VRAM address (location) of BG B tilemap.
  */
-u16 VDP_getBGBAddress();
+u16 VDP_getBGBAddress(void);
 /**
  *  \deprecated
  *      Use #VDP_getBGAAddress(..) instead.
  */
-u16 VDP_getAPlanAddress();
+u16 VDP_getAPlanAddress(void);
 /**
  *  \deprecated
  *      Use #VDP_getBGBAddress(..) instead.
  */
-u16 VDP_getBPlanAddress();
+u16 VDP_getBPlanAddress(void);
 /**
  *  \brief
  *      Get VRAM address (location) of Window tilemap.
  */
-u16 VDP_getWindowAddress();
+u16 VDP_getWindowAddress(void);
 /**
  *  \deprecated
  *      Use #VDP_getWindowAddress(..) instead.
  */
-u16 VDP_getWindowPlanAddress();
+u16 VDP_getWindowPlanAddress(void);
 /**
  *  \brief
  *      Get VRAM address (location) of Sprite list.
  */
-u16 VDP_getSpriteListAddress();
+u16 VDP_getSpriteListAddress(void);
 /**
  *  \brief
  *      Get VRAM address (location) of H SCroll table.
  */
-u16 VDP_getHScrollTableAddress();
+u16 VDP_getHScrollTableAddress(void);
 
 /**
  *  \brief
@@ -859,12 +855,12 @@ void VDP_setWindowVPos(u16 down, u16 pos);
  *      Wait for DMA operation to complete.
  *  \deprecated Use #DMA_waitCompletion() instead
  */
-void VDP_waitDMACompletion();
+void VDP_waitDMACompletion(void);
 /**
  *  \brief
  *      Wait for VDP FIFO to be empty.
  */
-void VDP_waitFIFOEmpty();
+void VDP_waitFIFOEmpty(void);
 
 /**
  *  \brief
@@ -875,7 +871,7 @@ void VDP_waitFIFOEmpty();
  *  The method actually wait for the start of Vertical Interruption.
  *  It returns immediately if we are already in V-Int handler.
  */
-bool VDP_waitVInt();
+bool VDP_waitVInt(void);
 /**
  *  \brief
  *      Wait for next vertical blank period (same as #VDP_waitVSync())
@@ -896,7 +892,7 @@ bool VDP_waitVBlank(bool forceNext);
  *
  *  The method actually wait for the *next* start of Vertical blanking.
  */
-bool VDP_waitVSync();
+bool VDP_waitVSync(void);
 /**
  *  \brief
  *      Wait for next vertical active area (end of vertical blank period)
@@ -915,7 +911,7 @@ void VDP_waitVActive(bool forceNext);
  *  Using direct V counter from VDP may give troubles as the VDP V-Counter rollback during V-Blank period.<br>
  *  This function aim to make ease the use of V-Counter by adjusting it to a [0-255] range where 0 is the start of VBlank area and 255 the end of active display area.
  */
-u16 VDP_getAdjustedVCounter();
+u16 VDP_getAdjustedVCounter(void);
 
 /**
  *  \brief
@@ -938,7 +934,7 @@ void VDP_showFPS(u16 asFloat);
  *
  * \see #SYS_getCPULoad()
  */
-void VDP_showCPULoad();
+void VDP_showCPULoad(void);
 
 
 #endif // _VDP_H_

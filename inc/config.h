@@ -92,7 +92,7 @@
  *      Set it to 1 if you want to use newlib with SGDK.<br>
  *      That will disable any standard methods from SGDK to replace them by newlib library implementation.
  */
-#define ENABLE_NEWLIB       1
+#define ENABLE_NEWLIB       0
 
 /**
  *  \brief
@@ -100,7 +100,7 @@
  *
  *      ENABLE_NEWLIB must be set to 1 so libstdc++ can be linked against libc.
  */
-#define ENABLE_CPLUSPLUS    1
+#define ENABLE_CPLUSPLUS    0
 
 /**
  *  \brief
