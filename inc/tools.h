@@ -51,23 +51,24 @@ typedef s16 _comparatorCallback(void* o1, void* o2);
  *      Set the randomizer seed (to allow reproductible value if we are lucky with HV counter :p)
  */
 void setRandomSeed(u16 seed);
+
 /**
  *  \brief
  *      Returns a random u16 integer value.
  */
-u16 getrandom();
+u16 getrandom(void);
 
 /**
  *  \deprecated
  *      Uses #SYS_getFPS() instead
  */
 u32 getFPS();
+
 /**
  *  \deprecated
  *      Uses #SYS_getFPSAsFloat() instead
  */
 fix32 getFPS_f();
-
 
 /**
  *  \brief

@@ -58,7 +58,7 @@ DEFAULT_FLAGS 	:= $(EXTRA_FLAGS) 			 \
 				   -fdiagnostics-color=always\
 				   -ffunction-sections  	 \
 				   -fdata-sections 	  		 \
-				   -fno-strict-aliasing 	 \
+				   -ffunction-sections 		 \
 				   $(INCS) 					 \
 				   -L$(LIB)
 
@@ -77,11 +77,8 @@ release: FLAGS= $(DEFAULT_FLAGS) 		\
 				-fuse-linker-plugin 	\
 				-flto 					\
 				-O3 					\
-				-fno-web 				\
-				-fno-gcse 				\
 				-fno-unit-at-a-time 	\
-				-fomit-frame-pointer   	\
-				-ffast-math
+				-fomit-frame-pointer
 
 release: LIBMD= -lmd
 release: pre-build out/rom.bin out/symbol.txt
@@ -94,11 +91,8 @@ asm: FLAGS= $(DEFAULT_FLAGS) 			\
 				-fuse-linker-plugin 	\
 				-flto 					\
 				-O3 					\
-				-fno-web 				\
-				-fno-gcse 				\
 				-fno-unit-at-a-time 	\
-				-fomit-frame-pointer   	\
-				-ffast-math 			\
+				-fomit-frame-pointer 	\
 				-S
 
 asm: pre-build $(LSTS)
@@ -163,8 +157,9 @@ out/symbol.txt: out/rom.out
 	@$(NM) --plugin=$(PLUGIN) -n $< > $@
 
 out/rom.out: out/sega.o $(OBJS)
-	@$(CC) -n -T $(GDK)/md.ld $^ -L$(LIB) $(LIBMD) -lgcc -lc -lsys -lm -lcpp -lstdc++ \
-	-o $@ -Wl,--gc-sections
+	@$(CC) $(FLAGS) -nostartfiles -n -T $(GDK)/md.ld -flinker-output=exec \
+	$^ -L$(LIB) $(LIBMD) -lgcc -lc -lsys -lm -lcpp -lstdc++ \
+	-o $@ -Wl,--gc-sections -Wl,-Map,out/rom.map -Wl,--check-sections
 
 out/sega.o: $(SRC)/boot/sega.s out/rom_head.bin
 	@$(CC) -x assembler-with-cpp $(DEFAULT_FLAGS) -c $(SRC)/boot/sega.s -o $@

@@ -57,6 +57,7 @@ DEFAULT_FLAGS 	:= $(EXTRA_FLAGS) 			 \
                    -ffunction-sections       \
                    -fno-web                  \
                    -fno-gcse                 \
+                   -fms-extensions           \
 				   $(INCS)                   \
                    -L$(GDKPLUS)/lib
 
