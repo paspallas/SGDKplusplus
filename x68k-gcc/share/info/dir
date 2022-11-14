@@ -1,19 +1,16 @@
-Este es el fichero .../info/dir, el cual contiene el nodo situado
-en la cúspide de la jerarquía Info, y se llama (dir)Top.
-La primera vez que usted invoque Info comenzará desde este punto.
+This is the file .../info/dir, which contains the
+topmost node of the Info hierarchy, called (dir)Top.
+The first time you invoke Info you start off looking at this node.
 
-File: dir,	Node: Top	Esta es la cúspide de le jerarquía INFO
+File: dir,	Node: Top	This is the top of the INFO tree
 
-  Este (el Directorio principal) proporciona un menú que contiene las entradas
-  principales. Tecleando "q" saldrá de esta aplicación informática, tecleando
-  "H" prodrá obtener un listado de todos los comandos disponibles a modo de
-  referencia; tecleando "d" volverá a esta pantalla, "h" ofrece información
-  para usuarios/as primerizos/as; presionando "mEmacs<Return>" podrá visitar
-  el manual de Emacs, etc.
+  This (the Directory node) gives a menu of major topics.
+  Typing "q" exits, "H" lists all Info commands, "d" returns here,
+  "h" gives a primer for first-timers,
+  "mEmacs<Return>" visits the Emacs manual, etc.
 
-  También puede usted usar Info desde Emacs. En la versión de Emacs con
-  ventanas puede hacer click con el botón derecho del ratón sobre elementos
-  de menú o sobre enlaces para seleccionarlos o seguirlos.
+  In Emacs, you can click mouse button 2 on a menu item or cross reference
+  to select it.
 
 * Menu:
 

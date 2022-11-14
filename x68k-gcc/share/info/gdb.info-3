@@ -21,7 +21,7 @@ END-INFO-DIR-ENTRY
    This file documents the GNU debugger GDB.
 
    This is the Tenth Edition, of 'Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 11.2.
+Source-Level Debugger' for GDB (GDB) Version 12.1.
 
    Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
@@ -167,6 +167,22 @@ designed specifically for use with C++.  Here is a summary:
      use the GDB command-line word completion facilities to list the
      available choices, or to finish the type list for you.  *Note
      Command Completion: Completion, for details on how to do this.
+
+'Breakpoints in template functions'
+
+     Similar to how overloaded symbols are handled, GDB will ignore
+     template parameter lists when it encounters a symbol which includes
+     a C++ template.  This permits setting breakpoints on families of
+     template functions or functions whose parameters include template
+     types.
+
+     The '-qualified' flag may be used to override this behavior,
+     causing GDB to search for a specific function or type.
+
+     The GDB command-line word completion facility also understands
+     template parameters and may be used to list available choices or
+     finish template parameter lists for you.  *Note Command Completion:
+     Completion, for details on how to do this.
 
 'Breakpoints in functions with ABI tags'
 
@@ -1142,7 +1158,7 @@ difficult.
 * Ada Tasks and Core Files::    Tasking Support when Debugging Core Files
 * Ravenscar Profile::           Tasking Support when using the Ravenscar
                                    Profile
-* Ada Settings::                New settable GDB parameters for Ada.
+* Ada Source Character Set::    Character set of Ada source files.
 * Ada Glitches::                Known peculiarities of Ada mode.
 
 
@@ -1208,9 +1224,7 @@ Here are the notable omissions from the subset:
 
         - 'Address.
 
-   * The names in 'Characters.Latin_1' are not available and
-     concatenation is not implemented.  Thus, escape characters in
-     strings are not currently available.
+   * The names in 'Characters.Latin_1' are not available.
 
    * Equality tests ('=' and '/=') on arrays test for bitwise equality
      of representations.  They will generally work correctly for strings
@@ -1287,6 +1301,8 @@ Here are the notable omissions from the subset:
      or procedure (at best a dubious practice), you will have to use
      fully qualified names to access their new definitions.
 
+   * Based real literals are not implemented.
+
 
 File: gdb.info,  Node: Additions to Ada,  Next: Overloading support for Ada,  Prev: Omissions from Ada,  Up: Ada
 
@@ -1330,6 +1346,16 @@ additions specific to Ada:
 
           (gdb) break f
           (gdb) condition 1 (report(i); k += 1; A(k) > 100)
+
+   * An extension to based literals can be used to specify the exact
+     byte contents of a floating-point literal.  After the base, you can
+     use from zero to two 'l' characters, followed by an 'f'.  The
+     number of 'l' characters controls the width of the resulting real
+     constant: zero means 'Float' is used, one means 'Long_Float', and
+     two means 'Long_Long_Float'.
+
+          (gdb) print 16f#41b80000#
+          $1 = 23.0
 
    * Rather than use catenation and symbolic character names to
      introduce special characters into strings, one may instead use a
@@ -1597,6 +1623,38 @@ Threads::).  GDB provides the following task-related commands:
           #3  0x806153e in system.tasking.stages.activate_tasks ()
           #4  0x804aacc in un () at un.adb:5
 
+'task apply [TASK-ID-LIST | all] [FLAG]... COMMAND'
+     The 'task apply' command is the Ada tasking analogue of 'thread
+     apply' (*note Threads::).  It allows you to apply the named COMMAND
+     to one or more tasks.  Specify the tasks that you want affected
+     using a list of task IDs, or specify 'all' to apply to all tasks.
+
+     The FLAG arguments control what output to produce and how to handle
+     errors raised when applying COMMAND to a task.  FLAG must start
+     with a '-' directly followed by one letter in 'qcs'.  If several
+     flags are provided, they must be given individually, such as '-c
+     -q'.
+
+     By default, GDB displays some task information before the output
+     produced by COMMAND, and an error raised during the execution of a
+     COMMAND will abort 'task apply'.  The following flags can be used
+     to fine-tune this behavior:
+
+     '-c'
+          The flag '-c', which stands for 'continue', causes any errors
+          in COMMAND to be displayed, and the execution of 'task apply'
+          then continues.
+     '-s'
+          The flag '-s', which stands for 'silent', causes any errors or
+          empty output produced by a COMMAND to be silently ignored.
+          That is, the execution continues, but the task information and
+          errors are not printed.
+     '-q'
+          The flag '-q' ('quiet') disables printing the task
+          information.
+
+     Flags '-c' and '-s' cannot be used together.
+
 'break LOCATION task TASKNO'
 'break LOCATION task TASKNO if ...'
      These commands are like the 'break ... thread ...' command (*note
@@ -1659,7 +1717,7 @@ Under these circumstances, you should make a backup copy of the core
 file before inspecting it with GDB.
 
 
-File: gdb.info,  Node: Ravenscar Profile,  Next: Ada Settings,  Prev: Ada Tasks and Core Files,  Up: Ada
+File: gdb.info,  Node: Ravenscar Profile,  Next: Ada Source Character Set,  Prev: Ada Tasks and Core Files,  Up: Ada
 
 15.4.10.9 Tasking Support when using the Ravenscar Profile
 ..........................................................
@@ -1708,37 +1766,27 @@ sequence.  If you need to debug this code, you should use 'set ravenscar
 task-switching off'.
 
 
-File: gdb.info,  Node: Ada Settings,  Next: Ada Glitches,  Prev: Ravenscar Profile,  Up: Ada
+File: gdb.info,  Node: Ada Source Character Set,  Next: Ada Glitches,  Prev: Ravenscar Profile,  Up: Ada
 
-15.4.10.10 Ada Settings
-.......................
+15.4.10.10 Ada Source Character Set
+...................................
 
-'set varsize-limit SIZE'
-     Prevent GDB from attempting to evaluate objects whose size is above
-     the given limit (SIZE) when those sizes are computed from run-time
-     quantities.  This is typically the case when the object has a
-     variable size, such as an array whose bounds are not known at
-     compile time for example.  Setting SIZE to 'unlimited' removes the
-     size limitation.  By default, the limit is about 65KB.
+The GNAT compiler supports a number of character sets for source files.
+*Note Character Set Control: (gnat_ugn)Character Set Control.  GDB
+includes support for this as well.
 
-     The purpose of having such a limit is to prevent GDB from trying to
-     grab enormous chunks of virtual memory when asked to evaluate a
-     quantity whose bounds have been corrupted or have not yet been
-     fully initialized.  The limit applies to the results of some
-     subexpressions as well as to complete expressions.  For example, an
-     expression denoting a simple integer component, such as 'x.y.z',
-     may fail if the size of 'x.y' is variable and exceeds 'size'.  On
-     the other hand, GDB is sometimes clever; the expression 'A(i)',
-     where 'A' is an array variable with non-constant size, will
-     generally succeed regardless of the bounds on 'A', as long as the
-     component size is less than SIZE.
+'set ada source-charset CHARSET'
+     Set the source character set for Ada.  The character set must be
+     supported by GNAT. Because this setting affects the decoding of
+     symbols coming from the debug information in your program, the
+     setting should be set as early as possible.  The default is
+     'ISO-8859-1', because that is also GNAT's default.
 
-'show varsize-limit'
-     Show the limit on types whose size is determined by run-time
-     quantities.
+'show ada source-charset'
+     Show the current source character set for Ada.
 
 
-File: gdb.info,  Node: Ada Glitches,  Prev: Ada Settings,  Up: Ada
+File: gdb.info,  Node: Ada Glitches,  Prev: Ada Source Character Set,  Up: Ada
 
 15.4.10.11 Known Peculiarities of Ada Mode
 ..........................................
@@ -4002,7 +4050,9 @@ different methods of looking for the debug file:
      named 'NN/NNNNNNNN.debug', where NN are the first 2 hex characters
      of the build ID bit string, and NNNNNNNN are the rest of the bit
      string.  (Real build ID strings are 32 or more hex characters, not
-     10.)
+     10.)  GDB can automatically query 'debuginfod' servers using build
+     IDs in order to download separate debug files that cannot be found
+     locally.  For more information see *note Debuginfod::.
 
    So, for example, suppose you ask GDB to debug '/usr/bin/ls', which
 has a debug link that specifies the file 'ls.debug', and a build ID
@@ -4014,6 +4064,10 @@ following debug information files, in the indicated order:
    - '/usr/bin/ls.debug'
    - '/usr/bin/.debug/ls.debug'
    - '/usr/lib/debug/usr/bin/ls.debug'.
+
+   If the debug file still has not been found and 'debuginfod' (*note
+Debuginfod::) is enabled, GDB will attempt to download the file from
+'debuginfod' servers.
 
    Global debugging info directories default to what is set by GDB
 configure option '--with-separate-debug-dir'.  During GDB run you can
@@ -4314,12 +4368,12 @@ done before gdb reads the file.  The following will not work:
 
 It is possible for GDB to automatically save a copy of this index in a
 cache on disk and retrieve it from there when loading the same binary in
-the future.  This feature can be turned on with 'set index-cache on'.
-The following commands can be used to tweak the behavior of the index
-cache.
+the future.  This feature can be turned on with 'set index-cache enabled
+on'.  The following commands can be used to tweak the behavior of the
+index cache.
 
-'set index-cache on'
-'set index-cache off'
+'set index-cache enabled on'
+'set index-cache enabled off'
      Enable or disable the use of the symbol index cache.
 
 'set index-cache directory DIRECTORY'
@@ -7086,168 +7140,4 @@ command.
      Allow GDB to use only one debug register when watching a variable
      of scalar type, thus assuming that the variable is accessed through
      the address of its first byte.
-
-
-File: gdb.info,  Node: AVR,  Next: CRIS,  Prev: PowerPC Embedded,  Up: Embedded Processors
-
-21.3.9 Atmel AVR
-----------------
-
-When configured for debugging the Atmel AVR, GDB supports the following
-AVR-specific commands:
-
-'info io_registers'
-     This command displays information about the AVR I/O registers.  For
-     each register, GDB prints its number and value.
-
-
-File: gdb.info,  Node: CRIS,  Next: Super-H,  Prev: AVR,  Up: Embedded Processors
-
-21.3.10 CRIS
-------------
-
-When configured for debugging CRIS, GDB provides the following
-CRIS-specific commands:
-
-'set cris-version VER'
-     Set the current CRIS version to VER, either '10' or '32'.  The CRIS
-     version affects register names and sizes.  This command is useful
-     in case autodetection of the CRIS version fails.
-
-'show cris-version'
-     Show the current CRIS version.
-
-'set cris-dwarf2-cfi'
-     Set the usage of DWARF-2 CFI for CRIS debugging.  The default is
-     'on'.  Change to 'off' when using 'gcc-cris' whose version is below
-     'R59'.
-
-'show cris-dwarf2-cfi'
-     Show the current state of using DWARF-2 CFI.
-
-'set cris-mode MODE'
-     Set the current CRIS mode to MODE.  It should only be changed when
-     debugging in guru mode, in which case it should be set to 'guru'
-     (the default is 'normal').
-
-'show cris-mode'
-     Show the current CRIS mode.
-
-
-File: gdb.info,  Node: Super-H,  Prev: CRIS,  Up: Embedded Processors
-
-21.3.11 Renesas Super-H
------------------------
-
-For the Renesas Super-H processor, GDB provides these commands:
-
-'set sh calling-convention CONVENTION'
-     Set the calling-convention used when calling functions from GDB.
-     Allowed values are 'gcc', which is the default setting, and
-     'renesas'.  With the 'gcc' setting, functions are called using the
-     GCC calling convention.  If the DWARF-2 information of the called
-     function specifies that the function follows the Renesas calling
-     convention, the function is called using the Renesas calling
-     convention.  If the calling convention is set to 'renesas', the
-     Renesas calling convention is always used, regardless of the
-     DWARF-2 information.  This can be used to override the default of
-     'gcc' if debug information is missing, or the compiler does not
-     emit the DWARF-2 calling convention entry for a function.
-
-'show sh calling-convention'
-     Show the current calling convention setting.
-
-
-File: gdb.info,  Node: Architectures,  Prev: Embedded Processors,  Up: Configurations
-
-21.4 Architectures
-==================
-
-This section describes characteristics of architectures that affect all
-uses of GDB with the architecture, both native and cross.
-
-* Menu:
-
-* AArch64::
-* i386::
-* Alpha::
-* MIPS::
-* HPPA::               HP PA architecture
-* PowerPC::
-* Nios II::
-* Sparc64::
-* S12Z::
-
-
-File: gdb.info,  Node: AArch64,  Next: i386,  Up: Architectures
-
-21.4.1 AArch64
---------------
-
-When GDB is debugging the AArch64 architecture, it provides the
-following special commands:
-
-'set debug aarch64'
-     This command determines whether AArch64 architecture-specific
-     debugging messages are to be displayed.
-
-'show debug aarch64'
-     Show whether AArch64 debugging messages are displayed.
-
-21.4.1.1 AArch64 SVE.
-.....................
-
-When GDB is debugging the AArch64 architecture, if the Scalable Vector
-Extension (SVE) is present, then GDB will provide the vector registers
-'$z0' through '$z31', vector predicate registers '$p0' through '$p15',
-and the '$ffr' register.  In addition, the pseudo register '$vg' will be
-provided.  This is the vector granule for the current thread and
-represents the number of 64-bit chunks in an SVE 'z' register.
-
-   If the vector length changes, then the '$vg' register will be
-updated, but the lengths of the 'z' and 'p' registers will not change.
-This is a known limitation of GDB and does not affect the execution of
-the target process.
-
-21.4.1.2 AArch64 Pointer Authentication.
-........................................
-
-When GDB is debugging the AArch64 architecture, and the program is using
-the v8.3-A feature Pointer Authentication (PAC), then whenever the link
-register '$lr' is pointing to an PAC function its value will be masked.
-When GDB prints a backtrace, any addresses that required unmasking will
-be postfixed with the marker [PAC]. When using the MI, this is printed
-as part of the 'addr_flags' field.
-
-21.4.1.3 AArch64 Memory Tagging Extension.
-..........................................
-
-When GDB is debugging the AArch64 architecture, the program is using the
-v8.5-A feature Memory Tagging Extension (MTE) and there is support in
-the kernel for MTE, GDB will make memory tagging functionality available
-for inspection and editing of logical and allocation tags.  *Note Memory
-Tagging::.
-
-   To aid debugging, GDB will output additional information when SIGSEGV
-signals are generated as a result of memory tag failures.
-
-   If the tag violation is synchronous, the following will be shown:
-
-     Program received signal SIGSEGV, Segmentation fault
-     Memory tag violation while accessing address 0x0500fffff7ff8000
-     Allocation tag 0x1
-     Logical tag 0x5.
-
-   If the tag violation is asynchronous, the fault address is not
-available.  In this case GDB will show the following:
-
-     Program received signal SIGSEGV, Segmentation fault
-     Memory tag violation
-     Fault address unavailable.
-
-   A special register, 'tag_ctl', is made available through the
-'org.gnu.gdb.aarch64.mte' feature.  This register exposes some options
-that can be controlled at runtime and emulates the 'prctl' option
-'PR_SET_TAGGED_ADDR_CTRL'.  For further information, see the
-documentation in the Linux kernel.
 

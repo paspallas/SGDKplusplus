@@ -21,7 +21,7 @@ END-INFO-DIR-ENTRY
    This file documents the GNU debugger GDB.
 
    This is the Tenth Edition, of 'Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 11.2.
+Source-Level Debugger' for GDB (GDB) Version 12.1.
 
    Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
@@ -521,6 +521,7 @@ Emacs.
 * Search::                      Searching source files
 * Source Path::                 Specifying source directories
 * Machine Code::                Source and machine code
+* Disable Reading Source::	Disable Reading Source Code
 
 
 File: gdb.info,  Node: List,  Next: Specify Location,  Up: Source
@@ -1124,7 +1125,7 @@ versions of source.  You can correct the situation as follows:
      directories in one command.
 
 
-File: gdb.info,  Node: Machine Code,  Prev: Source Path,  Up: Source
+File: gdb.info,  Node: Machine Code,  Next: Disable Reading Source,  Prev: Source Path,  Up: Source
 
 9.6 Source and Machine Code
 ===========================
@@ -1390,6 +1391,27 @@ able to resolve these to actual function names.
      disassembly of the next line or instruction.
 
 
+File: gdb.info,  Node: Disable Reading Source,  Prev: Machine Code,  Up: Source
+
+9.7 Disable Reading Source Code
+===============================
+
+In some cases it can be desirable to prevent GDB from accessing source
+code files.  One case where this might be desirable is if the source
+code files are located over a slow network connection.
+
+   The following command can be used to control whether GDB should
+access source code files or not:
+
+'set source open [on|off]'
+'show source open'
+     When this option is 'on', which is the default, GDB will access
+     source code files when needed, for example to print source lines
+     when GDB stops, or in response to the 'list' command.
+
+     When this option is 'off', GDB will not access source code files.
+
+
 File: gdb.info,  Node: Data,  Next: Optimized Code,  Prev: Source,  Up: Top
 
 10 Examining Data
@@ -1434,6 +1456,10 @@ Pretty Printing::).
      '-max-depth DEPTH|unlimited'
           Set the threshold after which nested structures are replaced
           with ellipsis.  Related setting: *note set print max-depth::.
+
+     '-memory-tag-violations [on|off]'
+          Set printing of additional information about memory tag
+          violations.  *Note set print memory-tag-violations::.
 
      '-null-stop [on|off]'
           Set printing of char arrays to stop at first null char.
@@ -2050,20 +2076,21 @@ command with a slash and a format letter.  The format letters supported
 are:
 
 'x'
-     Regard the bits of the value as an integer, and print the integer
-     in hexadecimal.
+     Print the binary representation of the value in hexadecimal.
 
 'd'
-     Print as integer in signed decimal.
+     Print the binary representation of the value in decimal.
 
 'u'
-     Print as integer in unsigned decimal.
+     Print the binary representation of the value as an decimal, as if
+     it were unsigned.
 
 'o'
-     Print as integer in octal.
+     Print the binary representation of the value in octal.
 
 't'
-     Print as integer in binary.  The letter 't' stands for "two".  (1)
+     Print the binary representation of the value in binary.  The letter
+     't' stands for "two".  (1)
 
 'a'
      Print as an address, both absolute in hexadecimal and as an offset
@@ -2077,10 +2104,11 @@ are:
      info symbol: Symbols.
 
 'c'
-     Regard as an integer and print it as a character constant.  This
-     prints both the numerical value and its character representation.
-     The character representation is replaced with the octal escape
-     '\nnn' for characters outside the 7-bit ASCII range.
+     Cast the value to an integer (unlike other formats, this does not
+     just reinterpret the underlying bits) and print it as a character
+     constant.  This prints both the numerical value and its character
+     representation.  The character representation is replaced with the
+     octal escape '\nnn' for characters outside the 7-bit ASCII range.
 
      Without this format, GDB displays 'char', 'unsigned char', and
      'signed char' data as character constants.  Single-byte members of
@@ -2206,7 +2234,7 @@ hexadecimal ('x').
 
    You can also specify a negative repeat count to examine memory
 backward from the given address.  For example, 'x/-3uh 0x54320' prints
-three halfwords ('h') at '0x54314', '0x54328', and '0x5431c'.
+three halfwords ('h') at '0x5431a', '0x5431c', and '0x5431e'.
 
    Since the letters indicating unit sizes are all distinct from the
 letters specifying output formats, you do not have to remember whether
@@ -2613,7 +2641,7 @@ print symbol on':
 
 'show print elements'
      Display the number of elements of a large array that GDB will
-     print.  If the number is 0, then the printing is unlimited.
+     print.
 
 'set print frame-arguments VALUE'
      This command allows to control how the values of arguments are

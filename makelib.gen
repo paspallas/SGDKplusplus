@@ -43,13 +43,16 @@ FLAGSZ80_LIB := -i$(SRC_LIB) -i$(INCLUDE_LIB)
 
 
 release: FLAGS_LIB= $(DEFAULT_FLAGS_LIB)\
-				-fuse-linker-plugin 	\
-				-flto 					\
-				-O3 					\
-                -fno-web 				\
-				-fno-gcse 				\
-				-fno-unit-at-a-time 	\
-				-fomit-frame-pointer    \
+				-fuse-linker-plugin 			\
+				-flto 							\
+				-O2 							\
+                -fno-web 						\
+				-fno-gcse 						\
+				-fno-unit-at-a-time 			\
+				-fomit-frame-pointer    		\
+				--param=ipa-cp-unit-growth=100 	\
+				--param=inline-unit-growth=100 	\
+				--param=large-function-growth=900
 
 release: $(INCLUDE_LIB)/genesis.h.gch $(LIB)/libmd.a $(LIB)/libsys.a $(LIB)/libcpp.a
 

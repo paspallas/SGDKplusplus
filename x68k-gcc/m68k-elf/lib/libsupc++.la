@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/f/toolchains/68k/x68k/m68k-elf/lib'
+libdir='/f/toolchains/68k/x68k-12.1.0/m68k-elf/lib'

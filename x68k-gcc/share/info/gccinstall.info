@@ -1,7 +1,7 @@
 This is gccinstall.info, produced by makeinfo version 6.8 from
 install.texi.
 
-Copyright (C) 1988-2021 Free Software Foundation, Inc.
+Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -24,7 +24,7 @@ START-INFO-DIR-ENTRY
 * gccinstall: (gccinstall).    Installing the GNU Compiler Collection.
 END-INFO-DIR-ENTRY
 
-   Copyright (C) 1988-2021 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -55,8 +55,6 @@ File: gccinstall.info,  Node: Top,  Up: (dir)
 * Specific::        Host/target specific installation notes for GCC.
 * Binaries::        Where to get pre-compiled binaries.
 
-* Old::             Old installation documentation.
-
 * GNU Free Documentation License:: How you can copy and share this manual.
 * Concept Index::   This index has two entries.
 
@@ -67,7 +65,7 @@ File: gccinstall.info,  Node: Installing GCC,  Next: Binaries,  Up: Top
 ****************
 
 The latest version of this document is always available at
-http://gcc.gnu.org/install/.  It refers to the current development
+https://gcc.gnu.org/install/.  It refers to the current development
 sources, instructions for specific released versions are included with
 the sources.
 
@@ -83,7 +81,7 @@ host/target specific installation notes: Specific.  We recommend you
 browse the entire generic installation instructions before you proceed.
 
    Lists of successful builds for released versions of GCC are available
-at <http://gcc.gnu.org/buildstat.html>.  These lists are updated as new
+at <https://gcc.gnu.org/buildstat.html>.  These lists are updated as new
 information becomes available.
 
    The installation procedure itself is broken into five steps.
@@ -130,11 +128,6 @@ ISO C++11 compiler
      existing GCC binary (version 4.8 or later) because source code for
      language frontends other than C might use GCC extensions.
 
-     Note that to bootstrap GCC with versions of GCC earlier than 4.8,
-     you may need to use '--disable-stage1-checking', though
-     bootstrapping the compiler with such earlier compilers is strongly
-     discouraged.
-
 C standard library and headers
 
      In order to build GCC, the C standard library and headers must be
@@ -154,7 +147,7 @@ C standard library and headers
 GNAT
 
      In order to build GNAT, the Ada compiler, you need a working GNAT
-     compiler (GCC version 4.7 or later).
+     compiler (GCC version 5.1 or later).
 
      This includes GNAT tools such as 'gnatmake' and 'gnatlink', since
      the Ada front end is written in Ada and uses some GNAT-specific
@@ -181,6 +174,32 @@ GNAT
      Ada runtime libraries.  You can check that your build environment
      is clean by verifying that 'gnatls -v' lists only one explicit path
      in each section.
+
+GDC
+
+     In order to build GDC, the D compiler, you need a working GDC
+     compiler (GCC version 9.1 or later) and D runtime library,
+     'libphobos', as the D front end is written in D.
+
+     Versions of GDC prior to 12 can be built with an ISO C++11
+     compiler, which can then be installed and used to bootstrap newer
+     versions of the D front end.
+
+     It is strongly recommended to use an older version of GDC to build
+     GDC. More recent versions of GDC than the version built are not
+     guaranteed to work and will often fail during the build with
+     compilation errors relating to deprecations or removed features.
+
+     Note that 'configure' does not test whether the GDC installation
+     works and has a sufficiently recent version.  Though the
+     implementation of the D front end does not make use of any
+     GDC-specific extensions, or novel features of the D language, if
+     too old a GDC version is installed and '--enable-languages=d' is
+     used, the build will fail.
+
+     On some targets, 'libphobos' isn't enabled by default, but compiles
+     and works if '--enable-libphobos' is used.  Specifics are
+     documented for affected targets.
 
 A "working" POSIX compatible shell, or GNU bash
 
@@ -209,6 +228,9 @@ GNU binutils
      Necessary in some circumstances, optional in others.  See the
      host/target specific instructions for your platform for the exact
      requirements.
+
+     Note binutils 2.35 or newer is required for LTO to work correctly
+     with GNU libtool that includes doing a bootstrap with LTO enabled.
 
 gzip version 1.2.4 (or later) or
 bzip2 version 1.0.2 (or later)
@@ -273,7 +295,7 @@ MPFR Library version 3.1.0 (or later)
 MPC Library version 1.0.1 (or later)
 
      Necessary to build GCC.  It can be downloaded from
-     <http://www.multiprecision.org/mpc/>.  If an MPC source
+     <https://www.multiprecision.org/mpc/>.  If an MPC source
      distribution is found in a subdirectory of your GCC sources named
      'mpc', it will be built together with GCC. Alternatively, if MPC is
      already installed but it is not in your default library search
@@ -332,7 +354,7 @@ gperf version 2.7.2 (or later)
      'gcc/cp/cfns.gperf' to regenerate its associated header file, e.g.
      'gcc/cp/cfns.h'.
 
-DejaGnu 1.4.4
+DejaGnu version 1.5.3 (or later)
 Expect
 Tcl
 
@@ -520,20 +542,64 @@ to make clear that your version contains modifications.
 
      The default value is https://gcc.gnu.org/.
 
-Target specification
-====================
+Host, Build and Target specification
+====================================
 
-   * GCC has code to correctly determine the correct value for TARGET
-     for nearly all native systems.  Therefore, we highly recommend you
-     do not provide a configure target when configuring a native
-     compiler.
+Specify the host, build and target machine configurations.  You do this
+when you run the 'configure' script.
 
-   * TARGET must be specified as '--target=TARGET' when configuring a
-     cross compiler; examples of valid targets would be m68k-elf,
-     sh-elf, etc.
+   The "build" machine is the system which you are using, the "host"
+machine is the system where you want to run the resulting compiler
+(normally the build machine), and the "target" machine is the system for
+which you want the compiler to generate code.
 
-   * Specifying just TARGET instead of '--target=TARGET' implies that
-     the host defaults to TARGET.
+   If you are building a compiler to produce code for the machine it
+runs on (a native compiler), you normally do not need to specify any
+operands to 'configure'; it will try to guess the type of machine you
+are on and use that as the build, host and target machines.  So you
+don't need to specify a configuration when building a native compiler
+unless 'configure' cannot figure out what your configuration is or
+guesses wrong.
+
+   In those cases, specify the build machine's "configuration name" with
+the '--host' option; the host and target will default to be the same as
+the host machine.
+
+   Here is an example:
+
+     ./configure --host=x86_64-pc-linux-gnu
+
+   A configuration name may be canonical or it may be more or less
+abbreviated ('config.sub' script produces canonical versions).
+
+   A canonical configuration name has three parts, separated by dashes.
+It looks like this: 'CPU-COMPANY-SYSTEM'.
+
+   Here are the possible CPU types:
+
+     aarch64, aarch64_be, alpha, alpha64, amdgcn, arc, arceb, arm,
+     armeb, avr, bfin, bpf, cr16, cris, csky, epiphany, fido, fr30, frv,
+     ft32, h8300, hppa, hppa2.0, hppa64, i486, i686, ia64, iq2000, lm32,
+     loongarch64, m32c, m32r, m32rle, m68k, mcore, microblaze,
+     microblazeel, mips, mips64, mips64el, mips64octeon, mips64orion,
+     mips64vr, mipsel, mipsisa32, mipsisa32r2, mipsisa64, mipsisa64r2,
+     mipsisa64r2el, mipsisa64sb1, mipsisa64sr71k, mipstx39, mmix,
+     mn10300, moxie, msp430, nds32be, nds32le, nios2, nvptx, or1k,
+     pdp11, powerpc, powerpc64, powerpc64le, powerpcle, pru, riscv32,
+     riscv32be, riscv64, riscv64be, rl78, rx, s390, s390x, sh, shle,
+     sparc, sparc64, tic6x, tilegx, tilegxbe, tilepro, v850, v850e,
+     v850e1, vax, visium, x86_64, xstormy16, xtensa
+
+   Here is a list of system types:
+
+     aixVERSION, amdhsa, aout, cygwin, darwinVERSION, eabi, eabialtivec,
+     eabisim, eabisimaltivec, elf, elf32, elfbare, elfoabi,
+     freebsdVERSION, gnu, hpux, hpuxVERSION, kfreebsd-gnu,
+     kopensolaris-gnu, linux-androideabi, linux-gnu, linux-gnu_altivec,
+     linux-musl, linux-uclibc, lynxos, mingw32, mingw32crt, mmixware,
+     msdosdjgpp, netbsd, netbsdelfVERSION, nto-qnx, openbsd, rtems,
+     solarisVERSION, symbianelf, tpf, uclinux, uclinux_eabi, vms,
+     vxworks, vxworksae, vxworksmils
 
 Options specification
 =====================
@@ -842,10 +908,9 @@ option.
 '--with-ld=PATHNAME'
      Same as '--with-as' but for the linker.
 
-'--with-stabs'
-     Specify that stabs debugging information should be used instead of
-     whatever format the host normally uses.  Normally GCC uses the same
-     debug format as the host system.
+'--with-dsymutil=PATHNAME'
+     Same as '--with-as' but for the debug linker (only used on Darwin
+     platforms so far).
 
 '--with-tls=DIALECT'
      Specify the default TLS dialect, for systems were there is a
@@ -912,9 +977,9 @@ option.
 '--without-multilib-list'
      Specify what multilibs to build.  LIST is a comma separated list of
      values, possibly consisting of a single value.  Currently only
-     implemented for aarch64*-*-*, arm*-*-*, riscv*-*-*, sh*-*-* and
-     x86-64-*-linux*.  The accepted values and meaning for each target
-     is given below.
+     implemented for aarch64*-*-*, arm*-*-*, loongarch64-*-*,
+     riscv*-*-*, sh*-*-* and x86-64-*-linux*.  The accepted values and
+     meaning for each target is given below.
 
      'aarch64*-*-*'
           LIST is a comma separated list of 'ilp32', and 'lp64' to
@@ -977,6 +1042,15 @@ option.
           floating-point'-mfloat-abi=soft' '-mfloat-abi=soft'
           ABIs        '-mfloat-abi=softfp' '-mfloat-abi=softfp'
                       '-mfloat-abi=hard'   '-mfloat-abi=hard'
+
+     'loongarch*-*-*'
+          LIST is a comma-separated list of the following ABI
+          identifiers: 'lp64d[/base]' 'lp64f[/base]' 'lp64d[/base]',
+          where the '/base' suffix may be omitted, to enable their
+          respective run-time libraries.  If LIST is empty or 'default',
+          or if '--with-multilib-list' is not specified, then the
+          default ABI as specified by '--with-abi' or implied by
+          '--target' is selected.
 
      'riscv*-*-*'
           LIST is a single ABI name.  The target architecture must be
@@ -1050,6 +1124,20 @@ option.
      with lp64, rv64imac with lp64 and rv64imafc with lp64 will reuse
      this multi-lib set.
           rv64ima-lp64--f,c,fc
+
+     '--with-multilib-generator' have an optional configuration argument
+     '--cmodel=val' for code model, this option will expand with other
+     config options, VAL is a comma separated list of possible code
+     model, currently we support medlow and medany.
+
+     Example 5: Add multi-lib suppport for rv64ima with lp64; rv64ima
+     with lp64 and medlow code model
+          rv64ima-lp64--;--cmodel=medlow
+
+     Example 6: Add multi-lib suppport for rv64ima with lp64; rv64ima
+     with lp64 and medlow code model; rv64ima with lp64 and medany code
+     model
+          rv64ima-lp64--;--cmodel=medlow,medany
 
 '--with-endian=ENDIANS'
      Specify what endians to use.  Currently only implemented for
@@ -1280,6 +1368,19 @@ option.
      On certain targets this option sets the default stack clash
      protection guard size as a power of two in bytes.  On AArch64 SIZE
      is required to be either 12 (4KB) or 16 (64KB).
+
+'--with-isa-spec=ISA-SPEC-STRING'
+     On RISC-V targets specify the default version of the RISC-V
+     Unprivileged (formerly User-Level) ISA specification to produce
+     code conforming to.  The possibilities for ISA-SPEC-STRING are:
+     '2.2'
+          Produce code conforming to version 2.2.
+     '20190608'
+          Produce code conforming to version 20190608.
+     '20191213'
+          Produce code conforming to version 20191213.
+     In the absence of this configuration option the default version is
+     20191213.
 
 '--enable-__cxa_atexit'
      Define if you want to use __cxa_atexit, rather than atexit, to
@@ -1775,17 +1876,6 @@ option.
      floating point, it is not recommended to use
      '--with-long-double-format=ieee'.
 
-     On little endian PowerPC Linux systems, if you explicitly set the
-     'long double' type, it will build multilibs to allow you to select
-     either 'long double' format, unless you disable multilibs with the
-     '--disable-multilib' option.  At present, 'long double' multilibs
-     are not built on big endian PowerPC Linux systems.  If you are
-     building multilibs, you will need to configure the compiler using
-     the '--with-system-zlib' option.
-
-     If you do not set the 'long double' type explicitly, no multilibs
-     will be generated.
-
 '--enable-fdpic'
      On SH Linux systems, generate ELF FDPIC code.
 
@@ -1963,6 +2053,15 @@ option.
 
           % SRCDIR/configure \
               --enable-offload-targets=x86_64-intelmicemul-linux-gnu=/path/to/x86_64/compiler,nvptx-none
+
+'--enable-offload-defaulted'
+
+     Tell GCC that configured but not installed offload compilers and
+     libgomp plugins are silently ignored.  Useful for distribution
+     compilers where those are in separate optional packages and where
+     the presence or absence of those optional packages should determine
+     the actual supported offloading target set rather than the GCC
+     configure-time selection.
 
 '--with-hsa-runtime=PATHNAME'
 '--with-hsa-runtime-include=PATHNAME'
@@ -2588,7 +2687,12 @@ filesystems.
 
 *note GNAT-prerequisite::.
 
-5.5 Building with profile feedback
+5.5 Building the D compiler
+===========================
+
+*note GDC-prerequisite::.
+
+5.6 Building with profile feedback
 ==================================
 
 It is possible to use profile feedback to optimize the compiler itself.
@@ -2628,10 +2732,10 @@ Before you install GCC, we encourage you to run the testsuites and to
 compare your results with results from a similar configuration that have
 been submitted to the gcc-testresults mailing list.  Some of these
 archived results are linked from the build status lists at
-<http://gcc.gnu.org/buildstat.html>, although not everyone who reports a
-successful build runs the testsuites and submits the results.  This step
-is optional and may require you to download additional software, but it
-can give you confidence in your new GCC installation or point out
+<https://gcc.gnu.org/buildstat.html>, although not everyone who reports
+a successful build runs the testsuites and submits the results.  This
+step is optional and may require you to download additional software,
+but it can give you confidence in your new GCC installation or point out
 problems before you install and start using your new GCC.
 
    First, you must have downloaded the testsuites.  These are part of
@@ -2639,10 +2743,8 @@ the full distribution, but if you downloaded the "core" compiler plus
 any front ends, you must download the testsuites separately.
 
    Second, you must have the testing tools installed.  This includes
-DejaGnu, Tcl, and Expect; the DejaGnu site has links to these.  For
-running the BRIG frontend tests, a tool to assemble the binary BRIGs
-from HSAIL text, HSAILasm must be installed.  Some optional tests also
-require Python3 and pytest module.
+DejaGnu, Tcl, and Expect; the DejaGnu site has links to these.  Some
+optional tests also require Python3 and pytest module.
 
    If the directories where 'runtest' and 'expect' were installed are
 not in the 'PATH', you may need to set the following environment
@@ -2667,7 +2769,7 @@ ignored.
 
    If you are testing a cross-compiler, you may want to run the
 testsuite on a simulator as described at
-<http://gcc.gnu.org/simtest-howto.html>.
+<https://gcc.gnu.org/simtest-howto.html>.
 
 6.1 How can you run the testsuite on selected tests?
 ====================================================
@@ -2856,7 +2958,7 @@ feature.
 
    If you are bootstrapping a released version of GCC then please
 quickly review the build status page for your release, available from
-<http://gcc.gnu.org/buildstat.html>.  If your system is not listed for
+<https://gcc.gnu.org/buildstat.html>.  If your system is not listed for
 the version of GCC that you built, send a note to <gcc@gcc.gnu.org>
 indicating that you successfully built and installed GCC.  Include the
 following information:
@@ -2958,7 +3060,7 @@ makers.
      platforms.
 
 
-File: gccinstall.info,  Node: Specific,  Next: Old,  Prev: Binaries,  Up: Top
+File: gccinstall.info,  Node: Specific,  Next: GNU Free Documentation License,  Prev: Binaries,  Up: Top
 
 9 Host/target specific installation notes for GCC
 *************************************************
@@ -3107,24 +3209,14 @@ configure GCC for building a CR16 uclinux cross-compiler.
 CRIS
 ====
 
-CRIS is the CPU architecture in Axis Communications ETRAX
-system-on-a-chip series.  These are used in embedded applications.
+CRIS is a CPU architecture in Axis Communications systems-on-a-chip, for
+example the ETRAX series.  These are used in embedded applications.
 
    *Note CRIS Options: (gcc)CRIS Options, for a list of CRIS-specific
 options.
 
-   There are a few different CRIS targets:
-'cris-axis-elf'
-     Mainly for monolithic embedded systems.  Includes a multilib for
-     the 'v10' core used in 'ETRAX 100 LX'.
-'cris-axis-linux-gnu'
-     A GNU/Linux port for the CRIS architecture, currently targeting
-     'ETRAX 100 LX' by default.
-
-   Pre-packaged tools can be obtained from
-<ftp://ftp.axis.com/pub/axis/tools/cris/compiler-kit/>.  More
-information about this platform is available at
-<http://developer.axis.com/>.
+   Use 'configure --target=cris-elf' to configure GCC for building a
+cross-compiler for CRIS.
 
 DOS
 ===
@@ -3144,15 +3236,11 @@ Adapteva Epiphany.  This configuration is intended for embedded systems.
 *-*-freebsd*
 ============
 
-Support for FreeBSD 1 was discontinued in GCC 3.2.  Support for FreeBSD
-2 (and any mutant a.out variants of FreeBSD 3) was discontinued in GCC
-4.0.
-
-   In order to better utilize FreeBSD base system functionality and
-match the configuration of the system compiler, GCC 4.5 and above as
-well as GCC 4.4 past 2010-06-20 leverage SSP support in libc (which is
-present on FreeBSD 7 or later) and the use of '__cxa_atexit' by default
-(on FreeBSD 6 or later).  The use of 'dl_iterate_phdr' inside
+In order to better utilize FreeBSD base system functionality and match
+the configuration of the system compiler, GCC 4.5 and above as well as
+GCC 4.4 past 2010-06-20 leverage SSP support in libc (which is present
+on FreeBSD 7 or later) and the use of '__cxa_atexit' by default (on
+FreeBSD 6 or later).  The use of 'dl_iterate_phdr' inside
 'libgcc_s.so.1' and boehm-gc (on FreeBSD 7 or later) is enabled by GCC
 4.5 and above.
 
@@ -3364,8 +3452,11 @@ not supported, so '--enable-threads=dce' does not work.
 *-*-linux-gnu
 =============
 
-Versions of libstdc++-v3 starting with 3.2.1 require bug fixes present
-in glibc 2.2.5 and later.  More information is available in the
+The '.init_array' and '.fini_array' sections are enabled unconditionally
+which requires at least glibc 2.1 and binutils 2.12.
+
+   Versions of libstdc++-v3 starting with 3.2.1 require bug fixes
+present in glibc 2.2.5 and later.  More information is available in the
 libstdc++-v3 documentation.
 
 i?86-*-linux*
@@ -3411,15 +3502,6 @@ GNU/Linux.
 
    If you are using the installed system libunwind library with
 '--with-system-libunwind', then you must use libunwind 0.98 or later.
-
-   None of the following versions of GCC has an ABI that is compatible
-with any of the other versions in this list, with the exception that Red
-Hat 2.96 and Trillian 000171 are compatible with each other: 3.1, 3.0.2,
-3.0.1, 3.0, Red Hat 2.96, and Trillian 000717.  This primarily affects
-C++ programs and programs that create shared libraries.  GCC 3.1 or
-later is recommended for compiling linux, the kernel.  As of version 3.1
-GCC is believed to be fully ABI compliant, and hence no more major ABI
-changes are expected.
 
 ia64-*-hpux*
 ============
@@ -3602,6 +3684,28 @@ lm32-*-uclinux
 Lattice Mico32 processor.  This configuration is intended for embedded
 systems running uClinux.
 
+LoongArch
+=========
+
+LoongArch processor.  The following LoongArch targets are available:
+'loongarch64-linux-gnu*'
+     LoongArch processor running GNU/Linux.  This target triplet may be
+     coupled with a small set of possible suffixes to identify their
+     default ABI type:
+     'f64'
+          Uses 'lp64d/base' ABI by default.
+     'f32'
+          Uses 'lp64f/base' ABI by default.
+     'sf'
+          Uses 'lp64s/base' ABI by default.
+
+'loongarch64-linux-gnu'
+     Same as 'loongarch64-linux-gnuf64', but may be used with
+     '--with-abi=*' to configure the default ABI type.
+
+   More information about LoongArch can be found at
+<https://github.com/loongson/LoongArch-Documentation>.
+
 m32c-*-elf
 ==========
 
@@ -3768,7 +3872,7 @@ binaries are available at <https://opensource.apple.com>.
 
    This version of GCC requires at least cctools-590.36.  The
 cctools-590.36 package referenced from
-<http://gcc.gnu.org/ml/gcc/2006-03/msg00507.html> will not work on
+<https://gcc.gnu.org/ml/gcc/2006-03/msg00507.html> will not work on
 systems older than 10.3.9 (aka darwin7.9.0).
 
 powerpc-*-elf
@@ -3919,6 +4023,12 @@ you need to have any version of GNU 'c++filt', which is part of GNU
 binutils.  'libstdc++' symbol versioning will be disabled if no
 appropriate version is found.  Solaris 'c++filt' from the Solaris Studio
 compilers does _not_ work.
+
+   In order to build the GNU D compiler, GDC, a working 'libphobos' is
+needed.  That library wasn't built by default in GCC 9-11 on SPARC, or
+on x86 when the Solaris assembler is used, but can be enabled by
+configuring with '--enable-libphobos'.  Also, GDC 9.4.0 is required on
+x86, while GDC 9.3.0 is known to work on SPARC.
 
    The versions of the GNU Multiple Precision Library (GMP), the MPFR
 library and the MPC library bundled with Solaris 11.3 and later are
@@ -4131,10 +4241,8 @@ Intel 64-bit versions
 ---------------------
 
 GCC contains support for x86-64 using the mingw-w64 runtime library,
-available from <http://mingw-w64.org/doku.php>.  This library should be
-used with the target triple x86_64-pc-mingw32.
-
-   Presently Windows for Itanium is not supported.
+available from <https://www.mingw-w64.org/downloads/>.  This library
+should be used with the target triple x86_64-pc-mingw32.
 
 Windows CE
 ----------
@@ -4179,6 +4287,10 @@ version 2.20 or above if building your own.
 GCC will build with and support only MinGW runtime 3.12 and later.
 Earlier versions of headers are incompatible with the new default
 semantics of 'extern inline' in '-std=c99' and '-std=gnu99' modes.
+
+   To support emitting DWARF debugging info you need to use GNU binutils
+version 2.16 or above containing support for the '.secrel32' assembler
+pseudo-op.
 
 Older systems
 =============
@@ -4230,155 +4342,7 @@ linker; duplicate copies of inlines, vtables and template instantiations
 will be discarded automatically.
 
 
-File: gccinstall.info,  Node: Old,  Next: GNU Free Documentation License,  Prev: Specific,  Up: Top
-
-10 Old installation documentation
-*********************************
-
-Note most of this information is out of date and superseded by the
-previous chapters of this manual.  It is provided for historical
-reference only, because of a lack of volunteers to merge it into the
-main manual.
-
-* Menu:
-
-* Configurations::    Configurations Supported by GCC.
-
-   Here is the procedure for installing GCC on a GNU or Unix system.
-
-  1. If you have chosen a configuration for GCC which requires other GNU
-     tools (such as GAS or the GNU linker) instead of the standard
-     system tools, install the required tools in the build directory
-     under the names 'as', 'ld' or whatever is appropriate.
-
-     Alternatively, you can do subsequent compilation using a value of
-     the 'PATH' environment variable such that the necessary GNU tools
-     come before the standard system tools.
-
-  2. Specify the host, build and target machine configurations.  You do
-     this when you run the 'configure' script.
-
-     The "build" machine is the system which you are using, the "host"
-     machine is the system where you want to run the resulting compiler
-     (normally the build machine), and the "target" machine is the
-     system for which you want the compiler to generate code.
-
-     If you are building a compiler to produce code for the machine it
-     runs on (a native compiler), you normally do not need to specify
-     any operands to 'configure'; it will try to guess the type of
-     machine you are on and use that as the build, host and target
-     machines.  So you don't need to specify a configuration when
-     building a native compiler unless 'configure' cannot figure out
-     what your configuration is or guesses wrong.
-
-     In those cases, specify the build machine's "configuration name"
-     with the '--host' option; the host and target will default to be
-     the same as the host machine.
-
-     Here is an example:
-
-          ./configure --host=sparc-sun-sunos4.1
-
-     A configuration name may be canonical or it may be more or less
-     abbreviated.
-
-     A canonical configuration name has three parts, separated by
-     dashes.  It looks like this: 'CPU-COMPANY-SYSTEM'.  (The three
-     parts may themselves contain dashes; 'configure' can figure out
-     which dashes serve which purpose.)  For example,
-     'm68k-sun-sunos4.1' specifies a Sun 3.
-
-     You can also replace parts of the configuration by nicknames or
-     aliases.  For example, 'sun3' stands for 'm68k-sun', so
-     'sun3-sunos4.1' is another way to specify a Sun 3.
-
-     You can specify a version number after any of the system types, and
-     some of the CPU types.  In most cases, the version is irrelevant,
-     and will be ignored.  So you might as well specify the version if
-     you know it.
-
-     See *note Configurations::, for a list of supported configuration
-     names and notes on many of the configurations.  You should check
-     the notes in that section before proceeding any further with the
-     installation of GCC.
-
-
-File: gccinstall.info,  Node: Configurations,  Up: Old
-
-10.1 Configurations Supported by GCC
-====================================
-
-Here are the possible CPU types:
-
-     1750a, a29k, alpha, arm, avr, cN, clipper, dsp16xx, elxsi, fr30,
-     h8300, hppa1.0, hppa1.1, i370, i386, i486, i586, i686, i786, i860,
-     i960, ip2k, m32r, m68000, m68k, m88k, mcore, mips, mipsel, mips64,
-     mips64el, mn10200, mn10300, ns32k, pdp11, powerpc, powerpcle, romp,
-     rs6000, sh, sparc, sparclite, sparc64, v850, vax, we32k.
-
-   Here are the recognized company names.  As you can see, customary
-abbreviations are used rather than the longer official names.
-
-     acorn, alliant, altos, apollo, apple, att, bull, cbm, convergent,
-     convex, crds, dec, dg, dolphin, elxsi, encore, harris, hitachi, hp,
-     ibm, intergraph, isi, mips, motorola, ncr, next, ns, omron, plexus,
-     sequent, sgi, sony, sun, tti, unicom, wrs.
-
-   The company name is meaningful only to disambiguate when the rest of
-the information supplied is insufficient.  You can omit it, writing just
-'CPU-SYSTEM', if it is not needed.  For example, 'vax-ultrix4.2' is
-equivalent to 'vax-dec-ultrix4.2'.
-
-   Here is a list of system types:
-
-     386bsd, aix, acis, amigaos, aos, aout, aux, bosx, bsd, clix, coff,
-     ctix, cxux, dgux, dynix, ebmon, ecoff, elf, esix, freebsd, hms,
-     genix, gnu, linux, linux-gnu, hiux, hpux, iris, irix, isc, luna,
-     lynxos, mach, minix, msdos, mvs, netbsd, newsos, nindy, ns, osf,
-     osfrose, ptx, riscix, riscos, rtu, sco, sim, solaris, sunos, sym,
-     sysv, udi, ultrix, unicos, uniplus, unos, vms, vsta, vxworks,
-     winnt, xenix.
-
-You can omit the system type; then 'configure' guesses the operating
-system from the CPU and company.
-
-   You can add a version number to the system type; this may or may not
-make a difference.  For example, you can write 'bsd4.3' or 'bsd4.4' to
-distinguish versions of BSD.  In practice, the version number is most
-needed for 'sysv3' and 'sysv4', which are often treated differently.
-
-   'linux-gnu' is the canonical name for the GNU/Linux target; however
-GCC will also accept 'linux'.  The version of the kernel in use is not
-relevant on these systems.  A suffix such as 'libc1' or 'aout'
-distinguishes major versions of the C library; all of the suffixed
-versions are obsolete.
-
-   If you specify an impossible combination such as 'i860-dg-vms', then
-you may get an error message from 'configure', or it may ignore part of
-the information and do the best it can with the rest.  'configure'
-always prints the canonical name for the alternative that it used.  GCC
-does not support all possible alternatives.
-
-   Often a particular model of machine has a name.  Many machine names
-are recognized as aliases for CPU/company combinations.  Thus, the
-machine name 'sun3', mentioned above, is an alias for 'm68k-sun'.
-Sometimes we accept a company name as a machine name, when the name is
-popularly used for a particular machine.  Here is a table of the known
-machine names:
-
-     3300, 3b1, 3bN, 7300, altos3068, altos, apollo68, att-7300,
-     balance, convex-cN, crds, decstation-3100, decstation, delta,
-     encore, fx2800, gmicro, hp7NN, hp8NN, hp9k2NN, hp9k3NN, hp9k7NN,
-     hp9k8NN, iris4d, iris, isi68, m3230, magnum, merlin, miniframe,
-     mmax, news-3600, news800, news, next, pbd, pc532, pmax, powerpc,
-     powerpcle, ps2, risc-news, rtpc, sun2, sun386i, sun386, sun3, sun4,
-     symmetry, tower-32, tower.
-
-Remember that a machine name specifies both the cpu type and the company
-name.
-
-
-File: gccinstall.info,  Node: GNU Free Documentation License,  Next: Concept Index,  Prev: Old,  Up: Top
+File: gccinstall.info,  Node: GNU Free Documentation License,  Next: Concept Index,  Prev: Specific,  Up: Top
 
 GNU Free Documentation License
 ******************************
@@ -4386,7 +4350,7 @@ GNU Free Documentation License
                      Version 1.3, 3 November 2008
 
      Copyright (C) 2000, 2001, 2002, 2007, 2008 Free Software Foundation, Inc.
-     <http://fsf.org/>
+     <https://fsf.org/>
 
      Everyone is permitted to copy and distribute verbatim copies
      of this license document, but changing it is not allowed.
@@ -4783,7 +4747,7 @@ GNU Free Documentation License
      the GNU Free Documentation License from time to time.  Such new
      versions will be similar in spirit to the present version, but may
      differ in detail to address new problems or concerns.  See
-     <http://www.gnu.org/copyleft/>.
+     <https://www.gnu.org/copyleft/>.
 
      Each version of the License is given a distinguishing version
      number.  If the Document specifies that a particular numbered
@@ -4869,9 +4833,8 @@ Concept Index
 * Menu:
 
 * Binaries:                              Binaries.           (line    6)
-* build_configargs:                      Configuration.      (line 1739)
+* build_configargs:                      Configuration.      (line 1816)
 * Configuration:                         Configuration.      (line    6)
-* configurations supported by GCC:       Configurations.     (line    6)
 * Downloading GCC:                       Downloading the source.
                                                              (line    6)
 * Downloading the Source:                Downloading the source.
@@ -4879,7 +4842,7 @@ Concept Index
 * FDL, GNU Free Documentation License:   GNU Free Documentation License.
                                                              (line    6)
 * Host specific installation:            Specific.           (line    6)
-* host_configargs:                       Configuration.      (line 1743)
+* host_configargs:                       Configuration.      (line 1820)
 * Installing GCC: Binaries:              Binaries.           (line    6)
 * Installing GCC: Building:              Building.           (line    6)
 * Installing GCC: Configuration:         Configuration.      (line    6)
@@ -4889,7 +4852,7 @@ Concept Index
 * Specific installation notes:           Specific.           (line    6)
 * Target specific installation:          Specific.           (line    6)
 * Target specific installation notes:    Specific.           (line    6)
-* target_configargs:                     Configuration.      (line 1747)
+* target_configargs:                     Configuration.      (line 1824)
 * Testing:                               Testing.            (line    6)
 * Testsuite:                             Testing.            (line    6)
 
@@ -4897,107 +4860,107 @@ Concept Index
 
 Tag Table:
 Node: Top1696
-Node: Installing GCC2254
-Node: Prerequisites3888
-Ref: GNAT-prerequisite5954
-Node: Downloading the source15566
-Node: Configuration17237
-Ref: with-gnu-as33325
-Ref: with-as34220
-Ref: with-gnu-ld35629
-Ref: WithAixSoname59796
-Ref: AixLdCommand60457
-Node: Building102210
-Node: Testing118333
-Node: Final install126281
-Node: Binaries131581
-Node: Specific132688
-Ref: aarch64-x-x133195
-Ref: alpha-x-x135215
-Ref: amd64-x-solaris2135429
-Ref: amdgcn-x-amdhsa135511
-Ref: arc-x-elf32136037
-Ref: arc-linux-uclibc136213
-Ref: arm-x-eabi136354
-Ref: avr136607
-Ref: bfin137188
-Ref: cr16137451
-Ref: cris137867
-Ref: dos138565
-Ref: epiphany-x-elf138888
-Ref: x-x-freebsd138993
-Ref: ft32-x-elf140793
-Ref: h8300-hms140891
-Ref: hppa-hp-hpux141243
-Ref: hppa-hp-hpux10143615
-Ref: hppa-hp-hpux11144028
-Ref: x-x-linux-gnu149430
-Ref: ix86-x-linux149623
-Ref: ix86-x-solaris2149936
-Ref: ia64-x-linux151012
-Ref: ia64-x-hpux151782
-Ref: x-ibm-aix152337
-Ref: TransferAixShobj155999
-Ref: iq2000-x-elf159809
-Ref: lm32-x-elf159949
-Ref: lm32-x-uclinux160053
-Ref: m32c-x-elf160181
-Ref: m32r-x-elf160283
-Ref: m68k-x-x160385
-Ref: m68k-x-uclinux161423
-Ref: microblaze-x-elf161668
-Ref: mips-x-x161787
-Ref: moxie-x-elf163697
-Ref: msp430-x-elf163744
-Ref: nds32le-x-elf164301
-Ref: nds32be-x-elf164373
-Ref: nvptx-x-none164442
-Ref: or1k-x-elf165005
-Ref: or1k-x-linux165136
-Ref: powerpc-x-x165217
-Ref: powerpc-x-darwin165408
-Ref: powerpc-x-elf165902
-Ref: powerpc-x-linux-gnu165987
-Ref: powerpc-x-netbsd166082
-Ref: powerpc-x-eabisim166170
-Ref: powerpc-x-eabi166296
-Ref: powerpcle-x-elf166372
-Ref: powerpcle-x-eabisim166464
-Ref: powerpcle-x-eabi166597
-Ref: rl78-x-elf166680
-Ref: riscv32-x-elf166786
-Ref: riscv32-x-linux166975
-Ref: riscv64-x-elf167132
-Ref: riscv64-x-linux167321
-Ref: rx-x-elf167478
-Ref: s390-x-linux167524
-Ref: s390x-x-linux167596
-Ref: s390x-ibm-tpf167683
-Ref: x-x-solaris2167814
-Ref: sparc-x-x170921
-Ref: sparc-sun-solaris2171423
-Ref: sparc-x-linux172566
-Ref: sparc64-x-solaris2172597
-Ref: sparcv9-x-solaris2173315
-Ref: c6x-x-x173402
-Ref: tilegx-*-linux173494
-Ref: tilegxbe-*-linux173636
-Ref: tilepro-*-linux173779
-Ref: visium-x-elf173900
-Ref: x-x-vxworks174008
-Ref: x86-64-x-x175531
-Ref: x86-64-x-solaris2175859
-Ref: xtensa-x-elf176509
-Ref: xtensa-x-linux177180
-Ref: windows177521
-Ref: x-x-cygwin179362
-Ref: x-x-mingw32179915
-Ref: older180141
-Ref: elf182258
-Node: Old182516
-Node: Configurations185649
-Node: GNU Free Documentation License189187
-Node: Concept Index214315
+Node: Installing GCC2201
+Node: Prerequisites3837
+Ref: GNAT-prerequisite5680
+Ref: GDC-prerequisite7077
+Node: Downloading the source16639
+Node: Configuration18310
+Ref: with-gnu-as36610
+Ref: with-as37505
+Ref: with-gnu-ld38914
+Ref: WithAixSoname64625
+Ref: AixLdCommand65286
+Node: Building106891
+Node: Testing123098
+Node: Final install130929
+Node: Binaries136230
+Node: Specific137337
+Ref: aarch64-x-x137871
+Ref: alpha-x-x139891
+Ref: amd64-x-solaris2140105
+Ref: amdgcn-x-amdhsa140187
+Ref: arc-x-elf32140713
+Ref: arc-linux-uclibc140889
+Ref: arm-x-eabi141030
+Ref: avr141283
+Ref: bfin141864
+Ref: cr16142127
+Ref: cris142543
+Ref: dos142869
+Ref: epiphany-x-elf143194
+Ref: x-x-freebsd143299
+Ref: ft32-x-elf144947
+Ref: h8300-hms145045
+Ref: hppa-hp-hpux145397
+Ref: hppa-hp-hpux10147769
+Ref: hppa-hp-hpux11148182
+Ref: x-x-linux-gnu153584
+Ref: ix86-x-linux153907
+Ref: ix86-x-solaris2154220
+Ref: ia64-x-linux155296
+Ref: ia64-x-hpux155543
+Ref: x-ibm-aix156098
+Ref: TransferAixShobj159760
+Ref: iq2000-x-elf163570
+Ref: lm32-x-elf163710
+Ref: lm32-x-uclinux163814
+Ref: loongarch163942
+Ref: m32c-x-elf164636
+Ref: m32r-x-elf164738
+Ref: m68k-x-x164840
+Ref: m68k-x-uclinux165878
+Ref: microblaze-x-elf166123
+Ref: mips-x-x166242
+Ref: moxie-x-elf168152
+Ref: msp430-x-elf168199
+Ref: nds32le-x-elf168756
+Ref: nds32be-x-elf168828
+Ref: nvptx-x-none168897
+Ref: or1k-x-elf169460
+Ref: or1k-x-linux169591
+Ref: powerpc-x-x169672
+Ref: powerpc-x-darwin169863
+Ref: powerpc-x-elf170358
+Ref: powerpc-x-linux-gnu170443
+Ref: powerpc-x-netbsd170538
+Ref: powerpc-x-eabisim170626
+Ref: powerpc-x-eabi170752
+Ref: powerpcle-x-elf170828
+Ref: powerpcle-x-eabisim170920
+Ref: powerpcle-x-eabi171053
+Ref: rl78-x-elf171136
+Ref: riscv32-x-elf171242
+Ref: riscv32-x-linux171431
+Ref: riscv64-x-elf171588
+Ref: riscv64-x-linux171777
+Ref: rx-x-elf171934
+Ref: s390-x-linux171980
+Ref: s390x-x-linux172052
+Ref: s390x-ibm-tpf172139
+Ref: x-x-solaris2172270
+Ref: sparc-x-x175704
+Ref: sparc-sun-solaris2176206
+Ref: sparc-x-linux177349
+Ref: sparc64-x-solaris2177380
+Ref: sparcv9-x-solaris2178098
+Ref: c6x-x-x178185
+Ref: tilegx-*-linux178277
+Ref: tilegxbe-*-linux178419
+Ref: tilepro-*-linux178562
+Ref: visium-x-elf178683
+Ref: x-x-vxworks178791
+Ref: x86-64-x-x180314
+Ref: x86-64-x-solaris2180642
+Ref: xtensa-x-elf181292
+Ref: xtensa-x-linux181963
+Ref: windows182304
+Ref: x-x-cygwin184100
+Ref: x-x-mingw32184653
+Ref: older185035
+Ref: elf187152
+Node: GNU Free Documentation License187410
+Node: Concept Index212545
 
 End Tag Table
 

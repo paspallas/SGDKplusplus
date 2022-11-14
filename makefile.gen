@@ -63,12 +63,15 @@ DEFAULT_FLAGS 	:= $(EXTRA_FLAGS) 			 \
 
 FLAGSZ80:= -i$(SRC) -i$(INCLUDE) -i$(RES) -i$(SRC_LIB) -i$(INCLUDE_LIB)
 
-release: FLAGS= $(DEFAULT_FLAGS) 		\
-				-fuse-linker-plugin 	\
-				-flto 					\
-				-O3 					\
-				-fno-unit-at-a-time 	\
-				-fomit-frame-pointer
+release: FLAGS= $(DEFAULT_FLAGS) 				\
+				-fuse-linker-plugin 			\
+				-flto 							\
+				-O3 							\
+				-fno-unit-at-a-time 			\
+				-fomit-frame-pointer    		\
+				--param=ipa-cp-unit-growth=100 	\
+				--param=inline-unit-growth=100 	\
+				--param=large-function-growth=900
 
 release: LIBMD= -lmd
 release: pre-build out/rom.bin out/symbol.txt

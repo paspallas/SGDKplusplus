@@ -21,7 +21,7 @@ END-INFO-DIR-ENTRY
    This file documents the GNU debugger GDB.
 
    This is the Tenth Edition, of 'Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 11.2.
+Source-Level Debugger' for GDB (GDB) Version 12.1.
 
    Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
@@ -44,7 +44,7 @@ Debugging with GDB
 
 This file describes GDB, the GNU symbolic debugger.
 
-   This is the Tenth Edition, for GDB (GDB) Version 11.2.
+   This is the Tenth Edition, for GDB (GDB) Version 12.1.
 
    Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
@@ -105,6 +105,7 @@ in general.  We will miss him.
                                  the operating system
 * Trace File Format::		GDB trace file format
 * Index Section Format::        .gdb_index section format
+* Debuginfod::                  Download debugging resources with 'debuginfod'
 * Man Pages::			Manual pages
 * Copying::			GNU General Public License says
                                 how you can copy and share GDB
@@ -511,7 +512,7 @@ Let us use GDB to try to see what is going on.
      There is absolutely no warranty for GDB; type "show warranty"
       for details.
 
-     GDB 11.2, Copyright 1999 Free Software Foundation, Inc...
+     GDB 12.1, Copyright 1999 Free Software Foundation, Inc...
      (gdb)
 
 GDB reads only enough symbol data to know where to find the rest when
@@ -684,7 +685,7 @@ File: gdb.info,  Node: Invocation,  Next: Commands,  Prev: Sample Session,  Up: 
 This chapter discusses how to start GDB, and how to get out of it.  The
 essentials are:
    * type 'gdb' to start GDB.
-   * type 'quit' or 'Ctrl-d' to exit.
+   * type 'quit', 'exit' or 'Ctrl-d' to exit.
 
 * Menu:
 
@@ -1282,11 +1283,13 @@ File: gdb.info,  Node: Quitting GDB,  Next: Shell Commands,  Prev: Invoking GDB,
 ================
 
 'quit [EXPRESSION]'
+'exit [EXPRESSION]'
 'q'
-     To exit GDB, use the 'quit' command (abbreviated 'q'), or type an
-     end-of-file character (usually 'Ctrl-d').  If you do not supply
-     EXPRESSION, GDB will terminate normally; otherwise it will
-     terminate using the result of EXPRESSION as the error code.
+     To exit GDB, use the 'quit' command (abbreviated 'q'), the 'exit'
+     command, or type an end-of-file character (usually 'Ctrl-d').  If
+     you do not supply EXPRESSION, GDB will terminate normally;
+     otherwise it will terminate using the result of EXPRESSION as the
+     error code.
 
    An interrupt (often 'Ctrl-c') does not exit from GDB, but rather
 terminates the action of any GDB command that is in progress and returns
@@ -1379,16 +1382,14 @@ File: gdb.info,  Node: Logging Output,  Prev: Shell Commands,  Up: Invocation
 You may want to save the output of GDB commands to a file.  There are
 several commands to control GDB's logging.
 
-'set logging on'
-     Enable logging.
-'set logging off'
-     Disable logging.
+'set logging enabled [on|off]'
+     Enable or disable logging.
 'set logging file FILE'
      Change the name of the current logfile.  The default logfile is
      'gdb.txt'.
 'set logging overwrite [on|off]'
      By default, GDB will append to the logfile.  Set 'overwrite' if you
-     want 'set logging on' to overwrite the logfile instead.
+     want 'set logging enabled on' to overwrite the logfile instead.
 'set logging redirect [on|off]'
      By default, GDB output will go to both the terminal and the
      logfile.  Set 'redirect' if you want output to go only to the log
@@ -1745,10 +1746,10 @@ also omit a "true" value, as it is implied by default.
 completing on '-' after the command name.  For example:
 
      (gdb) print -<TAB><TAB>
-     -address         -max-depth       -raw-values      -union
-     -array           -null-stop       -repeats         -vtbl
-     -array-indexes   -object          -static-members
-     -elements        -pretty          -symbol
+     -address         -max-depth               -pretty          -symbol
+     -array           -memory-tag-violations   -raw-values      -union
+     -array-indexes   -null-stop               -repeats         -vtbl
+     -elements        -object                  -static-members
 
    Completion will in some cases guide you with a suggestion of what
 kind of argument an option expects.  For example:
@@ -2737,8 +2738,12 @@ the 'remove-inferiors' command.
 'clone-inferior [ -copies N ] [ INFNO ]'
      Adds N inferiors ready to execute the same program as inferior
      INFNO; N defaults to 1, and INFNO defaults to the number of the
-     current inferior.  This is a convenient command when you want to
-     run another instance of the inferior you are debugging.
+     current inferior.  This command copies the values of the ARGS,
+     INFERIOR-TTY and CWD properties from the current inferior to the
+     new one.  It also propagates changes the user made to environment
+     variables using the 'set environment' and 'unset environment'
+     commands.  This is a convenient command when you want to run
+     another instance of the inferior you are debugging.
 
           (gdb) info inferiors
             Num  Description       Connection   Executable
@@ -2789,7 +2794,7 @@ use 'set print inferior-events':
      The 'set print inferior-events' command allows you to enable or
      disable printing of messages when GDB notices that new inferiors
      have started or that inferiors have exited or have been detached.
-     By default, these messages will not be printed.
+     By default, these messages will be printed.
 
 'show print inferior-events'
      Show whether messages will be printed when GDB detects that
@@ -3178,6 +3183,11 @@ watchpoints in programs with multiple threads.
 'show debug libthread-db'
      Turns on or off display of 'libthread_db'-related events.  Use '1'
      to enable, '0' to disable.
+
+'set debug threads [on|off]'
+'show debug threads'
+     When 'on' GDB will print additional messages when threads are
+     created and deleted.
 
 
 File: gdb.info,  Node: Forks,  Next: Checkpoint/Restart,  Prev: Threads,  Up: Running
@@ -4013,7 +4023,7 @@ culprit.)
 includes support for hardware watchpoints, which do not slow down the
 running of your program.
 
-'watch [-l|-location] EXPR [thread THREAD-ID] [mask MASKVALUE]'
+'watch [-l|-location] EXPR [thread THREAD-ID] [mask MASKVALUE] [task TASK-ID]'
      Set a watchpoint for an expression.  GDB will break when the
      expression EXPR is written into by the program and its value
      changes.  The simplest (and the most popular) use of this command
@@ -4026,6 +4036,9 @@ running of your program.
      EXPR.  If any other threads change the value of EXPR, GDB will not
      break.  Note that watchpoints restricted to a single thread in this
      way only work with Hardware Watchpoints.
+
+     Similarly, if the 'task' argument is given, then the watchpoint
+     will be specific to the indicated Ada task (*note Ada Tasks::).
 
      Ordinarily a watchpoint respects the scope of variables in EXPR
      (see below).  The '-location' argument tells GDB to instead watch

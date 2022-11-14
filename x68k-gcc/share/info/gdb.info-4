@@ -21,7 +21,7 @@ END-INFO-DIR-ENTRY
    This file documents the GNU debugger GDB.
 
    This is the Tenth Edition, of 'Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 11.2.
+Source-Level Debugger' for GDB (GDB) Version 12.1.
 
    Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
@@ -35,6 +35,170 @@ with the Back-Cover Texts as in (a) below.
    (a) The FSF's Back-Cover Text is: "You are free to copy and modify
 this GNU Manual.  Buying copies from GNU Press supports the FSF in
 developing GNU and promoting software freedom."
+
+
+File: gdb.info,  Node: AVR,  Next: CRIS,  Prev: PowerPC Embedded,  Up: Embedded Processors
+
+21.3.9 Atmel AVR
+----------------
+
+When configured for debugging the Atmel AVR, GDB supports the following
+AVR-specific commands:
+
+'info io_registers'
+     This command displays information about the AVR I/O registers.  For
+     each register, GDB prints its number and value.
+
+
+File: gdb.info,  Node: CRIS,  Next: Super-H,  Prev: AVR,  Up: Embedded Processors
+
+21.3.10 CRIS
+------------
+
+When configured for debugging CRIS, GDB provides the following
+CRIS-specific commands:
+
+'set cris-version VER'
+     Set the current CRIS version to VER, either '10' or '32'.  The CRIS
+     version affects register names and sizes.  This command is useful
+     in case autodetection of the CRIS version fails.
+
+'show cris-version'
+     Show the current CRIS version.
+
+'set cris-dwarf2-cfi'
+     Set the usage of DWARF-2 CFI for CRIS debugging.  The default is
+     'on'.  Change to 'off' when using 'gcc-cris' whose version is below
+     'R59'.
+
+'show cris-dwarf2-cfi'
+     Show the current state of using DWARF-2 CFI.
+
+'set cris-mode MODE'
+     Set the current CRIS mode to MODE.  It should only be changed when
+     debugging in guru mode, in which case it should be set to 'guru'
+     (the default is 'normal').
+
+'show cris-mode'
+     Show the current CRIS mode.
+
+
+File: gdb.info,  Node: Super-H,  Prev: CRIS,  Up: Embedded Processors
+
+21.3.11 Renesas Super-H
+-----------------------
+
+For the Renesas Super-H processor, GDB provides these commands:
+
+'set sh calling-convention CONVENTION'
+     Set the calling-convention used when calling functions from GDB.
+     Allowed values are 'gcc', which is the default setting, and
+     'renesas'.  With the 'gcc' setting, functions are called using the
+     GCC calling convention.  If the DWARF-2 information of the called
+     function specifies that the function follows the Renesas calling
+     convention, the function is called using the Renesas calling
+     convention.  If the calling convention is set to 'renesas', the
+     Renesas calling convention is always used, regardless of the
+     DWARF-2 information.  This can be used to override the default of
+     'gcc' if debug information is missing, or the compiler does not
+     emit the DWARF-2 calling convention entry for a function.
+
+'show sh calling-convention'
+     Show the current calling convention setting.
+
+
+File: gdb.info,  Node: Architectures,  Prev: Embedded Processors,  Up: Configurations
+
+21.4 Architectures
+==================
+
+This section describes characteristics of architectures that affect all
+uses of GDB with the architecture, both native and cross.
+
+* Menu:
+
+* AArch64::
+* i386::
+* Alpha::
+* MIPS::
+* HPPA::               HP PA architecture
+* PowerPC::
+* Nios II::
+* Sparc64::
+* S12Z::
+
+
+File: gdb.info,  Node: AArch64,  Next: i386,  Up: Architectures
+
+21.4.1 AArch64
+--------------
+
+When GDB is debugging the AArch64 architecture, it provides the
+following special commands:
+
+'set debug aarch64'
+     This command determines whether AArch64 architecture-specific
+     debugging messages are to be displayed.
+
+'show debug aarch64'
+     Show whether AArch64 debugging messages are displayed.
+
+21.4.1.1 AArch64 SVE.
+.....................
+
+When GDB is debugging the AArch64 architecture, if the Scalable Vector
+Extension (SVE) is present, then GDB will provide the vector registers
+'$z0' through '$z31', vector predicate registers '$p0' through '$p15',
+and the '$ffr' register.  In addition, the pseudo register '$vg' will be
+provided.  This is the vector granule for the current thread and
+represents the number of 64-bit chunks in an SVE 'z' register.
+
+   If the vector length changes, then the '$vg' register will be
+updated, but the lengths of the 'z' and 'p' registers will not change.
+This is a known limitation of GDB and does not affect the execution of
+the target process.
+
+21.4.1.2 AArch64 Pointer Authentication.
+........................................
+
+When GDB is debugging the AArch64 architecture, and the program is using
+the v8.3-A feature Pointer Authentication (PAC), then whenever the link
+register '$lr' is pointing to an PAC function its value will be masked.
+When GDB prints a backtrace, any addresses that required unmasking will
+be postfixed with the marker [PAC]. When using the MI, this is printed
+as part of the 'addr_flags' field.
+
+21.4.1.3 AArch64 Memory Tagging Extension.
+..........................................
+
+When GDB is debugging the AArch64 architecture, the program is using the
+v8.5-A feature Memory Tagging Extension (MTE) and there is support in
+the kernel for MTE, GDB will make memory tagging functionality available
+for inspection and editing of logical and allocation tags.  *Note Memory
+Tagging::.
+
+   To aid debugging, GDB will output additional information when SIGSEGV
+signals are generated as a result of memory tag failures.
+
+   If the tag violation is synchronous, the following will be shown:
+
+     Program received signal SIGSEGV, Segmentation fault
+     Memory tag violation while accessing address 0x0500fffff7ff8000
+     Allocation tag 0x1
+     Logical tag 0x5.
+
+   If the tag violation is asynchronous, the fault address is not
+available.  In this case GDB will show the following:
+
+     Program received signal SIGSEGV, Segmentation fault
+     Memory tag violation
+     Fault address unavailable.
+
+   A special register, 'tag_ctl', is made available through the
+'org.gnu.gdb.aarch64.mte' feature.  This register exposes some options
+that can be controlled at runtime and emulates the 'prctl' option
+'PR_SET_TAGGED_ADDR_CTRL'.  For further information, see the
+documentation in the Linux kernel.
 
 
 File: gdb.info,  Node: i386,  Next: Alpha,  Prev: AArch64,  Up: Architectures
@@ -687,6 +851,21 @@ styles can also be disabled entirely.
 
 'show style sources'
      Show the current state of source code styling.
+
+'set style disassembler enabled 'on|off''
+     Enable or disable disassembler styling.  This affects whether
+     disassembler output, such as the output of the 'disassemble'
+     command, is styled.  Disassembler styling only works if styling in
+     general is enabled (with 'set style enabled on'), and if a source
+     highlighting library is available to GDB.
+
+     To highlight disassembler output, GDB must be compiled with Python
+     support, and the Python Pygments package must be available.  If
+     these requirements are not met then GDB will not highlight
+     disassembler output, even when this option is 'on'.
+
+'show style disassembler enabled'
+     Show the current state of disassembler styling.
 
    Subcommands of 'set style' control specific forms of styling.  These
 subcommands all follow the same pattern: each style-able object can be
@@ -1447,10 +1626,11 @@ commands.
 'show debug jit'
      Displays the current state of GDB JIT debugging.
 
-'set debug lin-lwp'
-     Turn on or off debugging messages from the Linux LWP debug support.
-'show debug lin-lwp'
-     Show the current state of Linux LWP debugging messages.
+'set debug linux-nat [on|off]'
+     Turn on or off debugging messages from the Linux native target
+     debug support.
+'show debug linux-nat'
+     Show the current state of Linux native target debugging messages.
 
 'set debug linux-namespaces'
      Turn on or off debugging messages from the Linux namespaces debug
@@ -1606,6 +1786,63 @@ File: gdb.info,  Node: Other Misc Settings,  Prev: Debugging Output,  Up: Contro
 'show interactive-mode'
      Displays whether the debugger is operating in interactive mode or
      not.
+
+'set suppress-cli-notifications'
+     If 'on', command-line-interface (CLI) notifications that are
+     printed by GDB are suppressed.  If 'off', the notifications are
+     printed as usual.  The default value is 'off'.  CLI notifications
+     occur when you change the selected context or when the program
+     being debugged stops, as detailed below.
+
+     _User-selected context changes:_
+          When you change the selected context (i.e. the current
+          inferior, thread and/or the frame), GDB prints information
+          about the new context.  For example, the default behavior is
+          below:
+
+               (gdb) inferior 1
+               [Switching to inferior 1 [process 634] (/tmp/test)]
+               [Switching to thread 1 (process 634)]
+               #0  main () at test.c:3
+               3         return 0;
+               (gdb)
+
+          When the notifications are suppressed, the new context is not
+          printed:
+
+               (gdb) set suppress-cli-notifications on
+               (gdb) inferior 1
+               (gdb)
+
+     _The program being debugged stops:_
+          When the program you are debugging stops (e.g. because of
+          hitting a breakpoint, completing source-stepping, an
+          interrupt, etc.), GDB prints information about the stop event.
+          For example, below is a breakpoint hit:
+
+               (gdb) break test.c:3
+               Breakpoint 2 at 0x555555555155: file test.c, line 3.
+               (gdb) continue
+               Continuing.
+
+               Breakpoint 2, main () at test.c:3
+               3         return 0;
+               (gdb)
+
+          When the notifications are suppressed, the output becomes:
+
+               (gdb) break test.c:3
+               Breakpoint 2 at 0x555555555155: file test.c, line 3.
+               (gdb) set suppress-cli-notifications on
+               (gdb) continue
+               Continuing.
+               (gdb)
+
+          Suppressing CLI notifications may be useful in scripts to
+          obtain a reduced output from a list of commands.
+
+'show suppress-cli-notifications'
+     Displays whether printing CLI notifications is suppressed or not.
 
 
 File: gdb.info,  Node: Extending GDB,  Next: Interpreters,  Prev: Controlling GDB,  Up: Top
@@ -2213,7 +2450,7 @@ an abbreviation of any part of a command.
 
      (gdb) alias -a set print elms = set print elements
      (gdb) alias -a show print elms = show print elements
-     (gdb) set p elms 20
+     (gdb) set p elms 200
      (gdb) show p elms
      Limit on string chars or array elements to print is 200.
 
@@ -2492,7 +2729,8 @@ optional arguments while skipping others.  Example:
 * Events In Python::            Listening for events from GDB.
 * Threads In Python::           Accessing inferior threads from Python.
 * Recordings In Python::        Accessing recordings from Python.
-* Commands In Python::          Implementing new commands in Python.
+* CLI Commands In Python::      Implementing new CLI commands in Python.
+* GDB/MI Commands In Python::   Implementing new GDB/MI commands in Python.
 * Parameters In Python::        Adding new GDB parameters.
 * Functions In Python::         Writing new convenience functions.
 * Progspaces In Python::        Program spaces.
@@ -2508,6 +2746,7 @@ optional arguments while skipping others.  Example:
 * Lazy Strings In Python::      Python representation of lazy strings.
 * Architectures In Python::     Python representation of architectures.
 * Registers In Python::         Python representation of registers.
+* Connections In Python::	Python representation of connections.
 * TUI Windows In Python::       Implementing new TUI windows.
 
 
@@ -2603,6 +2842,25 @@ for debugging purposes only, expect them to change over time.
      parameter's value is converted to a Python value of the appropriate
      type, and returned.
 
+ -- Function: gdb.set_parameter (name, value)
+     Sets the gdb parameter NAME to VALUE.  As with 'gdb.parameter', the
+     parameter name string may contain spaces if the parameter has a
+     multi-part name.
+
+ -- Function: gdb.with_parameter (name, value)
+     Create a Python context manager (for use with the Python 'with'
+     statement) that temporarily sets the gdb parameter NAME to VALUE.
+     On exit from the context, the previous value will be restored.
+
+     This uses 'gdb.parameter' in its implementation, so it can throw
+     the same exceptions as that function.
+
+     For example, it's sometimes useful to evaluate some Python code
+     with a particular gdb language:
+
+          with gdb.with_parameter('language', 'pascal'):
+            ... language-specific operations
+
  -- Function: gdb.history (number)
      Return a value from GDB's value history (*note Value History::).
      The NUMBER argument indicates which history element to return.  If
@@ -2615,6 +2873,22 @@ for debugging purposes only, expect them to change over time.
 
      If no exception is raised, the return value is always an instance
      of 'gdb.Value' (*note Values From Inferior::).
+
+ -- Function: gdb.add_history (value)
+     Takes VALUE, an instance of 'gdb.Value' (*note Values From
+     Inferior::), and appends the value this object represents to GDB's
+     value history (*note Value History::), and return an integer, its
+     history number.  If VALUE is not a 'gdb.Value', it is is converted
+     using the 'gdb.Value' constructor.  If VALUE can't be converted to
+     a 'gdb.Value' then a 'TypeError' is raised.
+
+     When a command implemented in Python prints a single 'gdb.Value' as
+     its result, then placing the value into the history will allow the
+     user convenient access to those values via CLI history facilities.
+
+ -- Function: gdb.history_count ()
+     Return an integer indicating the number of values in GDB's value
+     history (*note Value History::).
 
  -- Function: gdb.convenience_variable (name)
      Return the value of the convenience variable (*note Convenience
@@ -2638,9 +2912,9 @@ for debugging purposes only, expect them to change over time.
      'gdb.Value'.
 
      This function can be useful when implementing a new command (*note
-     Commands In Python::), as it provides a way to parse the command's
-     argument as an expression.  It is also useful simply to compute
-     values.
+     CLI Commands In Python::, *note GDB/MI Commands In Python::), as it
+     provides a way to parse the command's argument as an expression.
+     It is also useful simply to compute values.
 
  -- Function: gdb.find_pc_line (pc)
      Return the 'gdb.Symtab_and_line' object corresponding to the PC
@@ -2733,6 +3007,11 @@ for debugging purposes only, expect them to change over time.
      'gdb.parameter('target-wide-charset')' in that 'auto' is never
      returned.
 
+ -- Function: gdb.host_charset ()
+     Return a string, the name of the current host character set (*note
+     Character Sets::).  This differs from
+     'gdb.parameter('host-charset')' in that 'auto' is never returned.
+
  -- Function: gdb.solib_name (address)
      Return the name of the shared library holding the given ADDRESS as
      a string, or 'None'.  This is identical to
@@ -2764,6 +3043,18 @@ for debugging purposes only, expect them to change over time.
      Some prompts cannot be substituted in GDB.  Secondary prompts such
      as those used by readline for command input, and annotation related
      prompts are prohibited from being changed.
+
+ -- Function: gdb.architecture_names ()
+     Return a list containing all of the architecture names that the
+     current build of GDB supports.  Each architecture name is a string.
+     The names returned in this list are the same names as are returned
+     from 'gdb.Architecture.name' (*note Architecture.name:
+     gdbpy_architecture_name.).
+
+ -- Function: gdb.connections
+     Return a list of 'gdb.TargetConnection' objects, one for each
+     currently active connection (*note Connections In Python::).  The
+     connection objects are in no particular order in the returned list.
 
 
 File: gdb.info,  Node: Exception Handling,  Next: Values From Inferior,  Prev: Basic Python,  Up: Python API
@@ -2982,6 +3273,9 @@ function, call it like so:
      the Python buffer object must be greater than or equal to the size
      of TYPE.
 
+     If TYPE is 'None' then this version of '__init__' behaves as though
+     TYPE was not passed at all.
+
  -- Function: Value.cast (type)
      Return a new instance of 'gdb.Value' that is the result of casting
      this instance to the type described by TYPE, which must be a
@@ -3171,6 +3465,17 @@ function, call it like so:
           equivalent to using the GDB command 'print' with the '/x'
           option and formats the value as a hexadecimal number.
 
+     'styling'
+          'True' if GDB should apply styling to the returned string.
+          When styling is applied, the returned string might contain
+          ANSI terminal escape sequences.  Escape sequences will only be
+          included if styling is turned on, see *note Output Styling::.
+          Additionally, GDB only styles some value contents, so not
+          every output string will contain escape sequences.
+
+          When 'False', which is the default, no output styling is
+          applied.
+
  -- Function: Value.string ([encoding[, errors[, length]]])
      If this 'gdb.Value' represents a string, then this method converts
      the contents to a Python string.  Otherwise, this method will throw
@@ -3256,6 +3561,9 @@ module:
      Ordinarily, this function will return an instance of 'gdb.Type'.
      If the named type cannot be found, it will throw an exception.
 
+   Integer types can be found without looking them up by name.  *Note
+Architectures In Python::, for the 'integer_type' method.
+
    If the type is a structure or class type, or an enum type, the fields
 of that type can be accessed using the Python "dictionary syntax".  For
 example, if 'some_type' is a 'gdb.Type' instance holding a structure
@@ -3318,6 +3626,19 @@ of the 'Type.fields' method for a description of the 'gdb.Field' class.
  -- Variable: Type.objfile
      The 'gdb.Objfile' that this type was defined in, or 'None' if there
      is no associated objfile.
+
+ -- Variable: Type.is_scalar
+     This property is 'True' if the type is a scalar type, otherwise,
+     this property is 'False'.  Examples of non-scalar types include
+     structures, unions, and classes.
+
+ -- Variable: Type.is_signed
+     For scalar types (those for which 'Type.is_scalar' is 'True'), this
+     property is 'True' if the type is signed, otherwise this property
+     is 'False'.
+
+     Attempting to read this property for a non-scalar type (a type for
+     which 'Type.is_scalar' is 'False'), will raise a 'ValueError'.
 
    The following methods are provided:
 
@@ -4104,8 +4425,8 @@ and extend this object, and only to override the methods needed.
      must contain the frames that are being elided wrapped in a suitable
      frame decorator.  If no frames are being elided this function may
      return an empty iterable, or 'None'.  Elided frames are indented
-     from normal frames in a 'CLI' backtrace, or in the case of
-     'GDB/MI', are placed in the 'children' field of the eliding frame.
+     from normal frames in a 'CLI' backtrace, or in the case of GDB/MI,
+     are placed in the 'children' field of the eliding frame.
 
      It is the frame filter's task to also filter out the elided frames
      from the source iterator.  This will avoid printing the frame
@@ -5035,10 +5356,16 @@ module:
  -- Variable: Inferior.num
      ID of inferior, as assigned by GDB.
 
+ -- Variable: Inferior.connection
+     The 'gdb.TargetConnection' for this inferior (*note Connections In
+     Python::), or 'None' if this inferior has no connection.
+
  -- Variable: Inferior.connection_num
      ID of inferior's connection as assigned by GDB, or None if the
      inferior is not connected to a target.  *Note Inferiors Connections
-     and Programs::.
+     and Programs::.  This is equivalent to
+     'gdb.Inferior.connection.num' in the case where
+     'gdb.Inferior.connection' is not 'None'.
 
  -- Variable: Inferior.pid
      Process ID of the inferior, as assigned by the underlying operating
@@ -5135,7 +5462,10 @@ provides methods to register and unregister event handlers:
 
      def exit_handler (event):
          print ("event type: exit")
-         print ("exit code: %d" % (event.exit_code))
+         if hasattr (event, 'exit_code'):
+             print ("exit code: %d" % (event.exit_code))
+         else:
+             print ("exit code not available")
 
      gdb.events.exited.connect (exit_handler)
 
@@ -5329,6 +5659,23 @@ and details of the events they emit:
       -- Variable: NewThreadEvent.inferior_thread
           The new thread.
 
+'events.gdb_exiting'
+     This is emitted when GDB exits.  This event is not emitted if GDB
+     exits as a result of an internal error, or after an unexpected
+     signal.  The event is of type 'gdb.GdbExitingEvent', which has a
+     single attribute:
+
+      -- Variable: GdbExitingEvent.exit_code
+          An integer, the value of the exit code GDB will return.
+
+'events.connection_removed'
+     This is emitted when GDB removes a connection (*note Connections In
+     Python::).  The event is of type 'gdb.ConnectionEvent'.  This has a
+     single read-only attribute:
+
+      -- Variable: ConnectionEvent.connection
+          The 'gdb.TargetConnection' that is being removed.
+
 
 File: gdb.info,  Node: Threads In Python,  Next: Recordings In Python,  Prev: Events In Python,  Up: Python API
 
@@ -5381,6 +5728,22 @@ module:
      The inferior this thread belongs to.  This attribute is represented
      as a 'gdb.Inferior' object.  This attribute is not writable.
 
+ -- Variable: InferiorThread.details
+     A string containing target specific thread state information.  The
+     format of this string varies by target.  If there is no additional
+     state information for this thread, then this attribute contains
+     'None'.
+
+     For example, on a GNU/Linux system, a thread that is in the process
+     of exiting will return the string 'Exiting'.  For remote targets
+     the 'details' string will be obtained with the 'qThreadExtraInfo'
+     remote packet, if the target supports it (*note 'qThreadExtraInfo':
+     qThreadExtraInfo.).
+
+     GDB displays the 'details' string as part of the 'Target Id'
+     column, in the 'info threads' output (*note 'info threads':
+     info_threads.).
+
    A 'gdb.InferiorThread' object has the following methods:
 
  -- Function: InferiorThread.is_valid ()
@@ -5411,7 +5774,7 @@ module:
      'gdb.Type' for the handle type.
 
 
-File: gdb.info,  Node: Recordings In Python,  Next: Commands In Python,  Prev: Threads In Python,  Up: Python API
+File: gdb.info,  Node: Recordings In Python,  Next: CLI Commands In Python,  Prev: Threads In Python,  Up: Python API
 
 23.3.2.19 Recordings In Python
 ..............................
@@ -5618,10 +5981,10 @@ limited to be contiguous.
          return count
 
 
-File: gdb.info,  Node: Commands In Python,  Next: Parameters In Python,  Prev: Recordings In Python,  Up: Python API
+File: gdb.info,  Node: CLI Commands In Python,  Next: GDB/MI Commands In Python,  Prev: Recordings In Python,  Up: Python API
 
-23.3.2.20 Commands In Python
-............................
+23.3.2.20 CLI Commands In Python
+................................
 
 You can implement new GDB CLI commands in Python.  A CLI command is
 implemented using an instance of the 'gdb.Command' class, most commonly
@@ -5841,9 +6204,141 @@ registration of the command with GDB.  Depending on how the Python code
 is read into GDB, you may need to import the 'gdb' module explicitly.
 
 
-File: gdb.info,  Node: Parameters In Python,  Next: Functions In Python,  Prev: Commands In Python,  Up: Python API
+File: gdb.info,  Node: GDB/MI Commands In Python,  Next: Parameters In Python,  Prev: CLI Commands In Python,  Up: Python API
 
-23.3.2.21 Parameters In Python
+23.3.2.21 GDB/MI Commands In Python
+...................................
+
+It is possible to add GDB/MI (*note GDB/MI::) commands implemented in
+Python.  A GDB/MI command is implemented using an instance of the
+'gdb.MICommand' class, most commonly using a subclass.
+
+ -- Function: MICommand.__init__ (name)
+     The object initializer for 'MICommand' registers the new command
+     with GDB.  This initializer is normally invoked from the subclass'
+     own '__init__' method.
+
+     NAME is the name of the command.  It must be a valid name of a
+     GDB/MI command, and in particular must start with a hyphen ('-').
+     Reusing the name of a built-in GDB/MI is not allowed, and a
+     'RuntimeError' will be raised.  Using the name of an GDB/MI command
+     previously defined in Python is allowed, the previous command will
+     be replaced with the new command.
+
+ -- Function: MICommand.invoke (arguments)
+     This method is called by GDB when the new MI command is invoked.
+
+     ARGUMENTS is a list of strings.  Note, that '--thread' and
+     '--frame' arguments are handled by GDB itself therefore they do not
+     show up in 'arguments'.
+
+     If this method raises an exception, then it is turned into a GDB/MI
+     '^error' response.  Only 'gdb.GdbError' exceptions (or its
+     sub-classes) should be used for reporting errors to users, any
+     other exception type is treated as a failure of the 'invoke'
+     method, and the exception will be printed to the error stream
+     according to the 'set python print-stack' setting (*note 'set
+     python print-stack': set_python_print_stack.).
+
+     If this method returns 'None', then the GDB/MI command will return
+     a '^done' response with no additional values.
+
+     Otherwise, the return value must be a dictionary, which is
+     converted to a GDB/MI RESULT-RECORD (*note GDB/MI Output Syntax::).
+     The keys of this dictionary must be strings, and are used as
+     VARIABLE names in the RESULT-RECORD, these strings must comply with
+     the naming rules detailed below.  The values of this dictionary are
+     recursively handled as follows:
+
+        * If the value is Python sequence or iterator, it is converted
+          to GDB/MI LIST with elements converted recursively.
+
+        * If the value is Python dictionary, it is converted to GDB/MI
+          TUPLE.  Keys in that dictionary must be strings, which comply
+          with the VARIABLE naming rules detailed below.  Values are
+          converted recursively.
+
+        * Otherwise, value is first converted to a Python string using
+          'str ()' and then converted to GDB/MI CONST.
+
+     The strings used for VARIABLE names in the GDB/MI output must
+     follow the following rules; the string must be at least one
+     character long, the first character must be in the set '[a-zA-Z]',
+     while every subsequent character must be in the set
+     '[-_a-zA-Z0-9]'.
+
+   An instance of 'MICommand' has the following attributes:
+
+ -- Variable: MICommand.name
+     A string, the name of this GDB/MI command, as was passed to the
+     '__init__' method.  This attribute is read-only.
+
+ -- Variable: MICommand.installed
+     A boolean value indicating if this command is installed ready for a
+     user to call from the command line.  Commands are automatically
+     installed when they are instantiated, after which this attribute
+     will be 'True'.
+
+     If later, a new command is created with the same name, then the
+     original command will become uninstalled, and this attribute will
+     be 'False'.
+
+     This attribute is read-write, setting this attribute to 'False'
+     will uninstall the command, removing it from the set of available
+     commands.  Setting this attribute to 'True' will install the
+     command for use.  If there is already a Python command with this
+     name installed, the currently installed command will be
+     uninstalled, and this command installed in its place.
+
+   The following code snippet shows how a two trivial MI command can be
+implemented in Python:
+
+     class MIEcho(gdb.MICommand):
+         """Echo arguments passed to the command."""
+
+         def __init__(self, name, mode):
+             self._mode = mode
+             super(MIEcho, self).__init__(name)
+
+         def invoke(self, argv):
+             if self._mode == 'dict':
+                 return { 'dict': { 'argv' : argv } }
+             elif self._mode == 'list':
+                 return { 'list': argv }
+             else:
+                 return { 'string': ", ".join(argv) }
+
+
+     MIEcho("-echo-dict", "dict")
+     MIEcho("-echo-list", "list")
+     MIEcho("-echo-string", "string")
+
+   The last three lines instantiate the class three times, creating
+three new GDB/MI commands '-echo-dict', '-echo-list', and
+'-echo-string'.  Each time a subclass of 'gdb.MICommand' is
+instantiated, the new command is automatically registered with GDB.
+
+   Depending on how the Python code is read into GDB, you may need to
+import the 'gdb' module explicitly.
+
+   The following example shows a GDB session in which the above commands
+have been added:
+
+     (gdb)
+     -echo-dict abc def ghi
+     ^done,dict={argv=["abc","def","ghi"]}
+     (gdb)
+     -echo-list abc def ghi
+     ^done,list=["abc","def","ghi"]
+     (gdb)
+     -echo-string abc def ghi
+     ^done,string="abc, def, ghi"
+     (gdb)
+
+
+File: gdb.info,  Node: Parameters In Python,  Next: Functions In Python,  Prev: GDB/MI Commands In Python,  Up: Python API
+
+23.3.2.22 Parameters In Python
 ..............................
 
 You can implement new GDB parameters using Python.  A new parameter is
@@ -5874,7 +6369,7 @@ Python scripts and commands.
      If NAME consists of multiple words, and no prefix parameter group
      can be found, an exception is raised.
 
-     COMMAND-CLASS should be one of the 'COMMAND_' constants (*note
+     COMMAND-CLASS should be one of the 'COMMAND_' constants (*note CLI
      Commands In Python::).  This argument tells GDB how to categorize
      the new parameter in the help system.
 
@@ -5889,21 +6384,44 @@ Python scripts and commands.
      If PARAMETER-CLASS is not 'PARAM_ENUM', then the presence of a
      fourth argument will cause an exception to be thrown.
 
-     The help text for the new parameter is taken from the Python
-     documentation string for the parameter's class, if there is one.
-     If there is no documentation string, a default value is used.
+     The help text for the new parameter includes the Python
+     documentation string from the parameter's class, if there is one.
+     If there is no documentation string, a default value is used.  The
+     documentation string is included in the output of the parameters
+     'help set' and 'help show' commands, and should be written taking
+     this into account.
 
  -- Variable: Parameter.set_doc
      If this attribute exists, and is a string, then its value is used
-     as the help text for this parameter's 'set' command.  The value is
-     examined when 'Parameter.__init__' is invoked; subsequent changes
-     have no effect.
+     as the first part of the help text for this parameter's 'set'
+     command.  The second part of the help text is taken from the
+     documentation string for the parameter's class, if there is one.
+
+     The value of 'set_doc' should give a brief summary specific to the
+     set action, this text is only displayed when the user runs the
+     'help set' command for this parameter.  The class documentation
+     should be used to give a fuller description of what the parameter
+     does, this text is displayed for both the 'help set' and 'help
+     show' commands.
+
+     The 'set_doc' value is examined when 'Parameter.__init__' is
+     invoked; subsequent changes have no effect.
 
  -- Variable: Parameter.show_doc
      If this attribute exists, and is a string, then its value is used
-     as the help text for this parameter's 'show' command.  The value is
-     examined when 'Parameter.__init__' is invoked; subsequent changes
-     have no effect.
+     as the first part of the help text for this parameter's 'show'
+     command.  The second part of the help text is taken from the
+     documentation string for the parameter's class, if there is one.
+
+     The value of 'show_doc' should give a brief summary specific to the
+     show action, this text is only displayed when the user runs the
+     'help show' command for this parameter.  The class documentation
+     should be used to give a fuller description of what the parameter
+     does, this text is displayed for both the 'help set' and 'help
+     show' commands.
+
+     The 'show_doc' value is examined when 'Parameter.__init__' is
+     invoked; subsequent changes have no effect.
 
  -- Variable: Parameter.value
      The 'value' attribute holds the underlying value of the parameter.
@@ -6008,7 +6526,7 @@ module:
 
 File: gdb.info,  Node: Functions In Python,  Next: Progspaces In Python,  Prev: Parameters In Python,  Up: Python API
 
-23.3.2.22 Writing new convenience functions
+23.3.2.23 Writing new convenience functions
 ...........................................
 
 You can implement new convenience functions (*note Convenience Vars::)
@@ -6064,7 +6582,7 @@ is read into GDB, you may need to import the 'gdb' module explicitly.
 
 File: gdb.info,  Node: Progspaces In Python,  Next: Objfiles In Python,  Prev: Functions In Python,  Up: Python API
 
-23.3.2.23 Program Spaces In Python
+23.3.2.24 Program Spaces In Python
 ..................................
 
 A program space, or "progspace", represents a symbolic view of an
@@ -6179,7 +6697,7 @@ will be loaded.
 
 File: gdb.info,  Node: Objfiles In Python,  Next: Frames In Python,  Prev: Progspaces In Python,  Up: Python API
 
-23.3.2.24 Objfiles In Python
+23.3.2.25 Objfiles In Python
 ............................
 
 GDB loads symbols for an inferior from various symbol-containing files
@@ -6330,7 +6848,7 @@ objfile.
 
 File: gdb.info,  Node: Frames In Python,  Next: Blocks In Python,  Prev: Objfiles In Python,  Up: Python API
 
-23.3.2.25 Accessing inferior stack frames from Python
+23.3.2.26 Accessing inferior stack frames from Python
 .....................................................
 
 When the debugged program stops, GDB is able to analyze its call stack
@@ -6525,7 +7043,7 @@ module:
 
 File: gdb.info,  Node: Blocks In Python,  Next: Symbols In Python,  Prev: Frames In Python,  Up: Python API
 
-23.3.2.26 Accessing blocks from Python
+23.3.2.27 Accessing blocks from Python
 ......................................
 
 In GDB, symbols are stored in blocks.  A block corresponds roughly to a
@@ -6646,7 +7164,7 @@ module:
 
 File: gdb.info,  Node: Symbols In Python,  Next: Symbol Tables In Python,  Prev: Blocks In Python,  Up: Python API
 
-23.3.2.27 Python representation of Symbols
+23.3.2.28 Python representation of Symbols
 ..........................................
 
 GDB represents every variable, function and type as an entry in a symbol
@@ -6884,379 +7402,4 @@ represented as constants in the 'gdb' module:
 'gdb.SYMBOL_LOC_COMMON_BLOCK'
      The value's address is a symbol.  This is only used for Fortran
      common blocks.
-
-
-File: gdb.info,  Node: Symbol Tables In Python,  Next: Line Tables In Python,  Prev: Symbols In Python,  Up: Python API
-
-23.3.2.28 Symbol table representation in Python
-...............................................
-
-Access to symbol table data maintained by GDB on the inferior is exposed
-to Python via two objects: 'gdb.Symtab_and_line' and 'gdb.Symtab'.
-Symbol table and line data for a frame is returned from the 'find_sal'
-method in 'gdb.Frame' object.  *Note Frames In Python::.
-
-   For more information on GDB's symbol table management, see *note
-Examining the Symbol Table: Symbols, for more information.
-
-   A 'gdb.Symtab_and_line' object has the following attributes:
-
- -- Variable: Symtab_and_line.symtab
-     The symbol table object ('gdb.Symtab') for this frame.  This
-     attribute is not writable.
-
- -- Variable: Symtab_and_line.pc
-     Indicates the start of the address range occupied by code for the
-     current source line.  This attribute is not writable.
-
- -- Variable: Symtab_and_line.last
-     Indicates the end of the address range occupied by code for the
-     current source line.  This attribute is not writable.
-
- -- Variable: Symtab_and_line.line
-     Indicates the current line number for this object.  This attribute
-     is not writable.
-
-   A 'gdb.Symtab_and_line' object has the following methods:
-
- -- Function: Symtab_and_line.is_valid ()
-     Returns 'True' if the 'gdb.Symtab_and_line' object is valid,
-     'False' if not.  A 'gdb.Symtab_and_line' object can become invalid
-     if the Symbol table and line object it refers to does not exist in
-     GDB any longer.  All other 'gdb.Symtab_and_line' methods will throw
-     an exception if it is invalid at the time the method is called.
-
-   A 'gdb.Symtab' object has the following attributes:
-
- -- Variable: Symtab.filename
-     The symbol table's source filename.  This attribute is not
-     writable.
-
- -- Variable: Symtab.objfile
-     The symbol table's backing object file.  *Note Objfiles In
-     Python::.  This attribute is not writable.
-
- -- Variable: Symtab.producer
-     The name and possibly version number of the program that compiled
-     the code in the symbol table.  The contents of this string is up to
-     the compiler.  If no producer information is available then 'None'
-     is returned.  This attribute is not writable.
-
-   A 'gdb.Symtab' object has the following methods:
-
- -- Function: Symtab.is_valid ()
-     Returns 'True' if the 'gdb.Symtab' object is valid, 'False' if not.
-     A 'gdb.Symtab' object can become invalid if the symbol table it
-     refers to does not exist in GDB any longer.  All other 'gdb.Symtab'
-     methods will throw an exception if it is invalid at the time the
-     method is called.
-
- -- Function: Symtab.fullname ()
-     Return the symbol table's source absolute file name.
-
- -- Function: Symtab.global_block ()
-     Return the global block of the underlying symbol table.  *Note
-     Blocks In Python::.
-
- -- Function: Symtab.static_block ()
-     Return the static block of the underlying symbol table.  *Note
-     Blocks In Python::.
-
- -- Function: Symtab.linetable ()
-     Return the line table associated with the symbol table.  *Note Line
-     Tables In Python::.
-
-
-File: gdb.info,  Node: Line Tables In Python,  Next: Breakpoints In Python,  Prev: Symbol Tables In Python,  Up: Python API
-
-23.3.2.29 Manipulating line tables using Python
-...............................................
-
-Python code can request and inspect line table information from a symbol
-table that is loaded in GDB.  A line table is a mapping of source lines
-to their executable locations in memory.  To acquire the line table
-information for a particular symbol table, use the 'linetable' function
-(*note Symbol Tables In Python::).
-
-   A 'gdb.LineTable' is iterable.  The iterator returns 'LineTableEntry'
-objects that correspond to the source line and address for each line
-table entry.  'LineTableEntry' objects have the following attributes:
-
- -- Variable: LineTableEntry.line
-     The source line number for this line table entry.  This number
-     corresponds to the actual line of source.  This attribute is not
-     writable.
-
- -- Variable: LineTableEntry.pc
-     The address that is associated with the line table entry where the
-     executable code for that source line resides in memory.  This
-     attribute is not writable.
-
-   As there can be multiple addresses for a single source line, you may
-receive multiple 'LineTableEntry' objects with matching 'line'
-attributes, but with different 'pc' attributes.  The iterator is sorted
-in ascending 'pc' order.  Here is a small example illustrating iterating
-over a line table.
-
-     symtab = gdb.selected_frame().find_sal().symtab
-     linetable = symtab.linetable()
-     for line in linetable:
-        print ("Line: "+str(line.line)+" Address: "+hex(line.pc))
-
-   This will have the following output:
-
-     Line: 33 Address: 0x4005c8L
-     Line: 37 Address: 0x4005caL
-     Line: 39 Address: 0x4005d2L
-     Line: 40 Address: 0x4005f8L
-     Line: 42 Address: 0x4005ffL
-     Line: 44 Address: 0x400608L
-     Line: 42 Address: 0x40060cL
-     Line: 45 Address: 0x400615L
-
-   In addition to being able to iterate over a 'LineTable', it also has
-the following direct access methods:
-
- -- Function: LineTable.line (line)
-     Return a Python 'Tuple' of 'LineTableEntry' objects for any entries
-     in the line table for the given LINE, which specifies the source
-     code line.  If there are no entries for that source code LINE, the
-     Python 'None' is returned.
-
- -- Function: LineTable.has_line (line)
-     Return a Python 'Boolean' indicating whether there is an entry in
-     the line table for this source line.  Return 'True' if an entry is
-     found, or 'False' if not.
-
- -- Function: LineTable.source_lines ()
-     Return a Python 'List' of the source line numbers in the symbol
-     table.  Only lines with executable code locations are returned.
-     The contents of the 'List' will just be the source line entries
-     represented as Python 'Long' values.
-
-
-File: gdb.info,  Node: Breakpoints In Python,  Next: Finish Breakpoints in Python,  Prev: Line Tables In Python,  Up: Python API
-
-23.3.2.30 Manipulating breakpoints using Python
-...............................................
-
-Python code can manipulate breakpoints via the 'gdb.Breakpoint' class.
-
-   A breakpoint can be created using one of the two forms of the
-'gdb.Breakpoint' constructor.  The first one accepts a string like one
-would pass to the 'break' (*note Setting Breakpoints: Set Breaks.) and
-'watch' (*note Setting Watchpoints: Set Watchpoints.) commands, and can
-be used to create both breakpoints and watchpoints.  The second accepts
-separate Python arguments similar to *note Explicit Locations::, and can
-only be used to create breakpoints.
-
- -- Function: Breakpoint.__init__ (spec [, type ][, wp_class ][,
-          internal ][, temporary ][, qualified ])
-     Create a new breakpoint according to SPEC, which is a string naming
-     the location of a breakpoint, or an expression that defines a
-     watchpoint.  The string should describe a location in a format
-     recognized by the 'break' command (*note Setting Breakpoints: Set
-     Breaks.) or, in the case of a watchpoint, by the 'watch' command
-     (*note Setting Watchpoints: Set Watchpoints.).
-
-     The optional TYPE argument specifies the type of the breakpoint to
-     create, as defined below.
-
-     The optional WP_CLASS argument defines the class of watchpoint to
-     create, if TYPE is 'gdb.BP_WATCHPOINT'.  If WP_CLASS is omitted, it
-     defaults to 'gdb.WP_WRITE'.
-
-     The optional INTERNAL argument allows the breakpoint to become
-     invisible to the user.  The breakpoint will neither be reported
-     when created, nor will it be listed in the output from 'info
-     breakpoints' (but will be listed with the 'maint info breakpoints'
-     command).
-
-     The optional TEMPORARY argument makes the breakpoint a temporary
-     breakpoint.  Temporary breakpoints are deleted after they have been
-     hit.  Any further access to the Python breakpoint after it has been
-     hit will result in a runtime error (as that breakpoint has now been
-     automatically deleted).
-
-     The optional QUALIFIED argument is a boolean that allows
-     interpreting the function passed in 'spec' as a fully-qualified
-     name.  It is equivalent to 'break''s '-qualified' flag (*note
-     Linespec Locations:: and *note Explicit Locations::).
-
- -- Function: Breakpoint.__init__ ([ source ][, function ][, label ][,
-          line ], ][ internal ][, temporary ][, qualified ])
-     This second form of creating a new breakpoint specifies the
-     explicit location (*note Explicit Locations::) using keywords.  The
-     new breakpoint will be created in the specified source file SOURCE,
-     at the specified FUNCTION, LABEL and LINE.
-
-     INTERNAL, TEMPORARY and QUALIFIED have the same usage as explained
-     previously.
-
-   The available types are represented by constants defined in the 'gdb'
-module:
-
-'gdb.BP_BREAKPOINT'
-     Normal code breakpoint.
-
-'gdb.BP_HARDWARE_BREAKPOINT'
-     Hardware assisted code breakpoint.
-
-'gdb.BP_WATCHPOINT'
-     Watchpoint breakpoint.
-
-'gdb.BP_HARDWARE_WATCHPOINT'
-     Hardware assisted watchpoint.
-
-'gdb.BP_READ_WATCHPOINT'
-     Hardware assisted read watchpoint.
-
-'gdb.BP_ACCESS_WATCHPOINT'
-     Hardware assisted access watchpoint.
-
-'gdb.BP_CATCHPOINT'
-     Catchpoint.  Currently, this type can't be used when creating
-     'gdb.Breakpoint' objects, but will be present in 'gdb.Breakpoint'
-     objects reported from 'gdb.BreakpointEvent's (*note Events In
-     Python::).
-
-   The available watchpoint types are represented by constants defined
-in the 'gdb' module:
-
-'gdb.WP_READ'
-     Read only watchpoint.
-
-'gdb.WP_WRITE'
-     Write only watchpoint.
-
-'gdb.WP_ACCESS'
-     Read/Write watchpoint.
-
- -- Function: Breakpoint.stop (self)
-     The 'gdb.Breakpoint' class can be sub-classed and, in particular,
-     you may choose to implement the 'stop' method.  If this method is
-     defined in a sub-class of 'gdb.Breakpoint', it will be called when
-     the inferior reaches any location of a breakpoint which
-     instantiates that sub-class.  If the method returns 'True', the
-     inferior will be stopped at the location of the breakpoint,
-     otherwise the inferior will continue.
-
-     If there are multiple breakpoints at the same location with a
-     'stop' method, each one will be called regardless of the return
-     status of the previous.  This ensures that all 'stop' methods have
-     a chance to execute at that location.  In this scenario if one of
-     the methods returns 'True' but the others return 'False', the
-     inferior will still be stopped.
-
-     You should not alter the execution state of the inferior (i.e.,
-     step, next, etc.), alter the current frame context (i.e., change
-     the current active frame), or alter, add or delete any breakpoint.
-     As a general rule, you should not alter any data within GDB or the
-     inferior at this time.
-
-     Example 'stop' implementation:
-
-          class MyBreakpoint (gdb.Breakpoint):
-                def stop (self):
-                  inf_val = gdb.parse_and_eval("foo")
-                  if inf_val == 3:
-                    return True
-                  return False
-
- -- Function: Breakpoint.is_valid ()
-     Return 'True' if this 'Breakpoint' object is valid, 'False'
-     otherwise.  A 'Breakpoint' object can become invalid if the user
-     deletes the breakpoint.  In this case, the object still exists, but
-     the underlying breakpoint does not.  In the cases of watchpoint
-     scope, the watchpoint remains valid even if execution of the
-     inferior leaves the scope of that watchpoint.
-
- -- Function: Breakpoint.delete ()
-     Permanently deletes the GDB breakpoint.  This also invalidates the
-     Python 'Breakpoint' object.  Any further access to this object's
-     attributes or methods will raise an error.
-
- -- Variable: Breakpoint.enabled
-     This attribute is 'True' if the breakpoint is enabled, and 'False'
-     otherwise.  This attribute is writable.  You can use it to enable
-     or disable the breakpoint.
-
- -- Variable: Breakpoint.silent
-     This attribute is 'True' if the breakpoint is silent, and 'False'
-     otherwise.  This attribute is writable.
-
-     Note that a breakpoint can also be silent if it has commands and
-     the first command is 'silent'.  This is not reported by the
-     'silent' attribute.
-
- -- Variable: Breakpoint.pending
-     This attribute is 'True' if the breakpoint is pending, and 'False'
-     otherwise.  *Note Set Breaks::.  This attribute is read-only.
-
- -- Variable: Breakpoint.thread
-     If the breakpoint is thread-specific, this attribute holds the
-     thread's global id.  If the breakpoint is not thread-specific, this
-     attribute is 'None'.  This attribute is writable.
-
- -- Variable: Breakpoint.task
-     If the breakpoint is Ada task-specific, this attribute holds the
-     Ada task id.  If the breakpoint is not task-specific (or the
-     underlying language is not Ada), this attribute is 'None'.  This
-     attribute is writable.
-
- -- Variable: Breakpoint.ignore_count
-     This attribute holds the ignore count for the breakpoint, an
-     integer.  This attribute is writable.
-
- -- Variable: Breakpoint.number
-     This attribute holds the breakpoint's number -- the identifier used
-     by the user to manipulate the breakpoint.  This attribute is not
-     writable.
-
- -- Variable: Breakpoint.type
-     This attribute holds the breakpoint's type -- the identifier used
-     to determine the actual breakpoint type or use-case.  This
-     attribute is not writable.
-
- -- Variable: Breakpoint.visible
-     This attribute tells whether the breakpoint is visible to the user
-     when set, or when the 'info breakpoints' command is run.  This
-     attribute is not writable.
-
- -- Variable: Breakpoint.temporary
-     This attribute indicates whether the breakpoint was created as a
-     temporary breakpoint.  Temporary breakpoints are automatically
-     deleted after that breakpoint has been hit.  Access to this
-     attribute, and all other attributes and functions other than the
-     'is_valid' function, will result in an error after the breakpoint
-     has been hit (as it has been automatically deleted).  This
-     attribute is not writable.
-
- -- Variable: Breakpoint.hit_count
-     This attribute holds the hit count for the breakpoint, an integer.
-     This attribute is writable, but currently it can only be set to
-     zero.
-
- -- Variable: Breakpoint.location
-     This attribute holds the location of the breakpoint, as specified
-     by the user.  It is a string.  If the breakpoint does not have a
-     location (that is, it is a watchpoint) the attribute's value is
-     'None'.  This attribute is not writable.
-
- -- Variable: Breakpoint.expression
-     This attribute holds a breakpoint expression, as specified by the
-     user.  It is a string.  If the breakpoint does not have an
-     expression (the breakpoint is not a watchpoint) the attribute's
-     value is 'None'.  This attribute is not writable.
-
- -- Variable: Breakpoint.condition
-     This attribute holds the condition of the breakpoint, as specified
-     by the user.  It is a string.  If there is no condition, this
-     attribute's value is 'None'.  This attribute is writable.
-
- -- Variable: Breakpoint.commands
-     This attribute holds the commands attached to the breakpoint.  If
-     there are commands, this attribute's value is a string holding all
-     the commands, separated by newlines.  If there are no commands,
-     this attribute is 'None'.  This attribute is writable.
 

@@ -21,7 +21,7 @@ END-INFO-DIR-ENTRY
    This file documents the GNU debugger GDB.
 
    This is the Tenth Edition, of 'Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 11.2.
+Source-Level Debugger' for GDB (GDB) Version 12.1.
 
    Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
@@ -37,9 +37,384 @@ this GNU Manual.  Buying copies from GNU Press supports the FSF in
 developing GNU and promoting software freedom."
 
 
+File: gdb.info,  Node: Symbol Tables In Python,  Next: Line Tables In Python,  Prev: Symbols In Python,  Up: Python API
+
+23.3.2.29 Symbol table representation in Python
+...............................................
+
+Access to symbol table data maintained by GDB on the inferior is exposed
+to Python via two objects: 'gdb.Symtab_and_line' and 'gdb.Symtab'.
+Symbol table and line data for a frame is returned from the 'find_sal'
+method in 'gdb.Frame' object.  *Note Frames In Python::.
+
+   For more information on GDB's symbol table management, see *note
+Examining the Symbol Table: Symbols, for more information.
+
+   A 'gdb.Symtab_and_line' object has the following attributes:
+
+ -- Variable: Symtab_and_line.symtab
+     The symbol table object ('gdb.Symtab') for this frame.  This
+     attribute is not writable.
+
+ -- Variable: Symtab_and_line.pc
+     Indicates the start of the address range occupied by code for the
+     current source line.  This attribute is not writable.
+
+ -- Variable: Symtab_and_line.last
+     Indicates the end of the address range occupied by code for the
+     current source line.  This attribute is not writable.
+
+ -- Variable: Symtab_and_line.line
+     Indicates the current line number for this object.  This attribute
+     is not writable.
+
+   A 'gdb.Symtab_and_line' object has the following methods:
+
+ -- Function: Symtab_and_line.is_valid ()
+     Returns 'True' if the 'gdb.Symtab_and_line' object is valid,
+     'False' if not.  A 'gdb.Symtab_and_line' object can become invalid
+     if the Symbol table and line object it refers to does not exist in
+     GDB any longer.  All other 'gdb.Symtab_and_line' methods will throw
+     an exception if it is invalid at the time the method is called.
+
+   A 'gdb.Symtab' object has the following attributes:
+
+ -- Variable: Symtab.filename
+     The symbol table's source filename.  This attribute is not
+     writable.
+
+ -- Variable: Symtab.objfile
+     The symbol table's backing object file.  *Note Objfiles In
+     Python::.  This attribute is not writable.
+
+ -- Variable: Symtab.producer
+     The name and possibly version number of the program that compiled
+     the code in the symbol table.  The contents of this string is up to
+     the compiler.  If no producer information is available then 'None'
+     is returned.  This attribute is not writable.
+
+   A 'gdb.Symtab' object has the following methods:
+
+ -- Function: Symtab.is_valid ()
+     Returns 'True' if the 'gdb.Symtab' object is valid, 'False' if not.
+     A 'gdb.Symtab' object can become invalid if the symbol table it
+     refers to does not exist in GDB any longer.  All other 'gdb.Symtab'
+     methods will throw an exception if it is invalid at the time the
+     method is called.
+
+ -- Function: Symtab.fullname ()
+     Return the symbol table's source absolute file name.
+
+ -- Function: Symtab.global_block ()
+     Return the global block of the underlying symbol table.  *Note
+     Blocks In Python::.
+
+ -- Function: Symtab.static_block ()
+     Return the static block of the underlying symbol table.  *Note
+     Blocks In Python::.
+
+ -- Function: Symtab.linetable ()
+     Return the line table associated with the symbol table.  *Note Line
+     Tables In Python::.
+
+
+File: gdb.info,  Node: Line Tables In Python,  Next: Breakpoints In Python,  Prev: Symbol Tables In Python,  Up: Python API
+
+23.3.2.30 Manipulating line tables using Python
+...............................................
+
+Python code can request and inspect line table information from a symbol
+table that is loaded in GDB.  A line table is a mapping of source lines
+to their executable locations in memory.  To acquire the line table
+information for a particular symbol table, use the 'linetable' function
+(*note Symbol Tables In Python::).
+
+   A 'gdb.LineTable' is iterable.  The iterator returns 'LineTableEntry'
+objects that correspond to the source line and address for each line
+table entry.  'LineTableEntry' objects have the following attributes:
+
+ -- Variable: LineTableEntry.line
+     The source line number for this line table entry.  This number
+     corresponds to the actual line of source.  This attribute is not
+     writable.
+
+ -- Variable: LineTableEntry.pc
+     The address that is associated with the line table entry where the
+     executable code for that source line resides in memory.  This
+     attribute is not writable.
+
+   As there can be multiple addresses for a single source line, you may
+receive multiple 'LineTableEntry' objects with matching 'line'
+attributes, but with different 'pc' attributes.  The iterator is sorted
+in ascending 'pc' order.  Here is a small example illustrating iterating
+over a line table.
+
+     symtab = gdb.selected_frame().find_sal().symtab
+     linetable = symtab.linetable()
+     for line in linetable:
+        print ("Line: "+str(line.line)+" Address: "+hex(line.pc))
+
+   This will have the following output:
+
+     Line: 33 Address: 0x4005c8L
+     Line: 37 Address: 0x4005caL
+     Line: 39 Address: 0x4005d2L
+     Line: 40 Address: 0x4005f8L
+     Line: 42 Address: 0x4005ffL
+     Line: 44 Address: 0x400608L
+     Line: 42 Address: 0x40060cL
+     Line: 45 Address: 0x400615L
+
+   In addition to being able to iterate over a 'LineTable', it also has
+the following direct access methods:
+
+ -- Function: LineTable.line (line)
+     Return a Python 'Tuple' of 'LineTableEntry' objects for any entries
+     in the line table for the given LINE, which specifies the source
+     code line.  If there are no entries for that source code LINE, the
+     Python 'None' is returned.
+
+ -- Function: LineTable.has_line (line)
+     Return a Python 'Boolean' indicating whether there is an entry in
+     the line table for this source line.  Return 'True' if an entry is
+     found, or 'False' if not.
+
+ -- Function: LineTable.source_lines ()
+     Return a Python 'List' of the source line numbers in the symbol
+     table.  Only lines with executable code locations are returned.
+     The contents of the 'List' will just be the source line entries
+     represented as Python 'Long' values.
+
+
+File: gdb.info,  Node: Breakpoints In Python,  Next: Finish Breakpoints in Python,  Prev: Line Tables In Python,  Up: Python API
+
+23.3.2.31 Manipulating breakpoints using Python
+...............................................
+
+Python code can manipulate breakpoints via the 'gdb.Breakpoint' class.
+
+   A breakpoint can be created using one of the two forms of the
+'gdb.Breakpoint' constructor.  The first one accepts a string like one
+would pass to the 'break' (*note Setting Breakpoints: Set Breaks.) and
+'watch' (*note Setting Watchpoints: Set Watchpoints.) commands, and can
+be used to create both breakpoints and watchpoints.  The second accepts
+separate Python arguments similar to *note Explicit Locations::, and can
+only be used to create breakpoints.
+
+ -- Function: Breakpoint.__init__ (spec [, type ][, wp_class ][,
+          internal ][, temporary ][, qualified ])
+     Create a new breakpoint according to SPEC, which is a string naming
+     the location of a breakpoint, or an expression that defines a
+     watchpoint.  The string should describe a location in a format
+     recognized by the 'break' command (*note Setting Breakpoints: Set
+     Breaks.) or, in the case of a watchpoint, by the 'watch' command
+     (*note Setting Watchpoints: Set Watchpoints.).
+
+     The optional TYPE argument specifies the type of the breakpoint to
+     create, as defined below.
+
+     The optional WP_CLASS argument defines the class of watchpoint to
+     create, if TYPE is 'gdb.BP_WATCHPOINT'.  If WP_CLASS is omitted, it
+     defaults to 'gdb.WP_WRITE'.
+
+     The optional INTERNAL argument allows the breakpoint to become
+     invisible to the user.  The breakpoint will neither be reported
+     when created, nor will it be listed in the output from 'info
+     breakpoints' (but will be listed with the 'maint info breakpoints'
+     command).
+
+     The optional TEMPORARY argument makes the breakpoint a temporary
+     breakpoint.  Temporary breakpoints are deleted after they have been
+     hit.  Any further access to the Python breakpoint after it has been
+     hit will result in a runtime error (as that breakpoint has now been
+     automatically deleted).
+
+     The optional QUALIFIED argument is a boolean that allows
+     interpreting the function passed in 'spec' as a fully-qualified
+     name.  It is equivalent to 'break''s '-qualified' flag (*note
+     Linespec Locations:: and *note Explicit Locations::).
+
+ -- Function: Breakpoint.__init__ ([ source ][, function ][, label ][,
+          line ], ][ internal ][, temporary ][, qualified ])
+     This second form of creating a new breakpoint specifies the
+     explicit location (*note Explicit Locations::) using keywords.  The
+     new breakpoint will be created in the specified source file SOURCE,
+     at the specified FUNCTION, LABEL and LINE.
+
+     INTERNAL, TEMPORARY and QUALIFIED have the same usage as explained
+     previously.
+
+   The available types are represented by constants defined in the 'gdb'
+module:
+
+'gdb.BP_BREAKPOINT'
+     Normal code breakpoint.
+
+'gdb.BP_HARDWARE_BREAKPOINT'
+     Hardware assisted code breakpoint.
+
+'gdb.BP_WATCHPOINT'
+     Watchpoint breakpoint.
+
+'gdb.BP_HARDWARE_WATCHPOINT'
+     Hardware assisted watchpoint.
+
+'gdb.BP_READ_WATCHPOINT'
+     Hardware assisted read watchpoint.
+
+'gdb.BP_ACCESS_WATCHPOINT'
+     Hardware assisted access watchpoint.
+
+'gdb.BP_CATCHPOINT'
+     Catchpoint.  Currently, this type can't be used when creating
+     'gdb.Breakpoint' objects, but will be present in 'gdb.Breakpoint'
+     objects reported from 'gdb.BreakpointEvent's (*note Events In
+     Python::).
+
+   The available watchpoint types are represented by constants defined
+in the 'gdb' module:
+
+'gdb.WP_READ'
+     Read only watchpoint.
+
+'gdb.WP_WRITE'
+     Write only watchpoint.
+
+'gdb.WP_ACCESS'
+     Read/Write watchpoint.
+
+ -- Function: Breakpoint.stop (self)
+     The 'gdb.Breakpoint' class can be sub-classed and, in particular,
+     you may choose to implement the 'stop' method.  If this method is
+     defined in a sub-class of 'gdb.Breakpoint', it will be called when
+     the inferior reaches any location of a breakpoint which
+     instantiates that sub-class.  If the method returns 'True', the
+     inferior will be stopped at the location of the breakpoint,
+     otherwise the inferior will continue.
+
+     If there are multiple breakpoints at the same location with a
+     'stop' method, each one will be called regardless of the return
+     status of the previous.  This ensures that all 'stop' methods have
+     a chance to execute at that location.  In this scenario if one of
+     the methods returns 'True' but the others return 'False', the
+     inferior will still be stopped.
+
+     You should not alter the execution state of the inferior (i.e.,
+     step, next, etc.), alter the current frame context (i.e., change
+     the current active frame), or alter, add or delete any breakpoint.
+     As a general rule, you should not alter any data within GDB or the
+     inferior at this time.
+
+     Example 'stop' implementation:
+
+          class MyBreakpoint (gdb.Breakpoint):
+                def stop (self):
+                  inf_val = gdb.parse_and_eval("foo")
+                  if inf_val == 3:
+                    return True
+                  return False
+
+ -- Function: Breakpoint.is_valid ()
+     Return 'True' if this 'Breakpoint' object is valid, 'False'
+     otherwise.  A 'Breakpoint' object can become invalid if the user
+     deletes the breakpoint.  In this case, the object still exists, but
+     the underlying breakpoint does not.  In the cases of watchpoint
+     scope, the watchpoint remains valid even if execution of the
+     inferior leaves the scope of that watchpoint.
+
+ -- Function: Breakpoint.delete ()
+     Permanently deletes the GDB breakpoint.  This also invalidates the
+     Python 'Breakpoint' object.  Any further access to this object's
+     attributes or methods will raise an error.
+
+ -- Variable: Breakpoint.enabled
+     This attribute is 'True' if the breakpoint is enabled, and 'False'
+     otherwise.  This attribute is writable.  You can use it to enable
+     or disable the breakpoint.
+
+ -- Variable: Breakpoint.silent
+     This attribute is 'True' if the breakpoint is silent, and 'False'
+     otherwise.  This attribute is writable.
+
+     Note that a breakpoint can also be silent if it has commands and
+     the first command is 'silent'.  This is not reported by the
+     'silent' attribute.
+
+ -- Variable: Breakpoint.pending
+     This attribute is 'True' if the breakpoint is pending, and 'False'
+     otherwise.  *Note Set Breaks::.  This attribute is read-only.
+
+ -- Variable: Breakpoint.thread
+     If the breakpoint is thread-specific, this attribute holds the
+     thread's global id.  If the breakpoint is not thread-specific, this
+     attribute is 'None'.  This attribute is writable.
+
+ -- Variable: Breakpoint.task
+     If the breakpoint is Ada task-specific, this attribute holds the
+     Ada task id.  If the breakpoint is not task-specific (or the
+     underlying language is not Ada), this attribute is 'None'.  This
+     attribute is writable.
+
+ -- Variable: Breakpoint.ignore_count
+     This attribute holds the ignore count for the breakpoint, an
+     integer.  This attribute is writable.
+
+ -- Variable: Breakpoint.number
+     This attribute holds the breakpoint's number -- the identifier used
+     by the user to manipulate the breakpoint.  This attribute is not
+     writable.
+
+ -- Variable: Breakpoint.type
+     This attribute holds the breakpoint's type -- the identifier used
+     to determine the actual breakpoint type or use-case.  This
+     attribute is not writable.
+
+ -- Variable: Breakpoint.visible
+     This attribute tells whether the breakpoint is visible to the user
+     when set, or when the 'info breakpoints' command is run.  This
+     attribute is not writable.
+
+ -- Variable: Breakpoint.temporary
+     This attribute indicates whether the breakpoint was created as a
+     temporary breakpoint.  Temporary breakpoints are automatically
+     deleted after that breakpoint has been hit.  Access to this
+     attribute, and all other attributes and functions other than the
+     'is_valid' function, will result in an error after the breakpoint
+     has been hit (as it has been automatically deleted).  This
+     attribute is not writable.
+
+ -- Variable: Breakpoint.hit_count
+     This attribute holds the hit count for the breakpoint, an integer.
+     This attribute is writable, but currently it can only be set to
+     zero.
+
+ -- Variable: Breakpoint.location
+     This attribute holds the location of the breakpoint, as specified
+     by the user.  It is a string.  If the breakpoint does not have a
+     location (that is, it is a watchpoint) the attribute's value is
+     'None'.  This attribute is not writable.
+
+ -- Variable: Breakpoint.expression
+     This attribute holds a breakpoint expression, as specified by the
+     user.  It is a string.  If the breakpoint does not have an
+     expression (the breakpoint is not a watchpoint) the attribute's
+     value is 'None'.  This attribute is not writable.
+
+ -- Variable: Breakpoint.condition
+     This attribute holds the condition of the breakpoint, as specified
+     by the user.  It is a string.  If there is no condition, this
+     attribute's value is 'None'.  This attribute is writable.
+
+ -- Variable: Breakpoint.commands
+     This attribute holds the commands attached to the breakpoint.  If
+     there are commands, this attribute's value is a string holding all
+     the commands, separated by newlines.  If there are no commands,
+     this attribute is 'None'.  This attribute is writable.
+
+
 File: gdb.info,  Node: Finish Breakpoints in Python,  Next: Lazy Strings In Python,  Prev: Breakpoints In Python,  Up: Python API
 
-23.3.2.31 Finish Breakpoints
+23.3.2.32 Finish Breakpoints
 ............................
 
 A finish breakpoint is a temporary breakpoint set at the return address
@@ -85,7 +460,7 @@ thread selected.
 
 File: gdb.info,  Node: Lazy Strings In Python,  Next: Architectures In Python,  Prev: Finish Breakpoints in Python,  Up: Python API
 
-23.3.2.32 Python representation of lazy strings
+23.3.2.33 Python representation of lazy strings
 ...............................................
 
 A "lazy string" is a string whose contents is not retrieved or encoded
@@ -135,7 +510,7 @@ string is immediately retrieved and encoded on creation.
 
 File: gdb.info,  Node: Architectures In Python,  Next: Registers In Python,  Prev: Lazy Strings In Python,  Up: Python API
 
-23.3.2.33 Python representation of architectures
+23.3.2.34 Python representation of architectures
 ................................................
 
 GDB uses architecture specific parameters and artifacts in a number of
@@ -179,6 +554,20 @@ of the 'gdb.Architecture' class.
           The value corresponding to this key is the length (integer
           value) of the instruction in bytes.
 
+ -- Function: Architecture.integer_type (size [, signed])
+     This function looks up an integer type by its SIZE, and optionally
+     whether or not it is signed.
+
+     SIZE is the size, in bits, of the desired integer type.  Only
+     certain sizes are currently supported: 0, 8, 16, 24, 32, 64, and
+     128.
+
+     If SIGNED is not specified, it defaults to 'True'.  If SIGNED is
+     'False', the returned type will be unsigned.
+
+     If the indicated type cannot be found, this function will throw a
+     'ValueError' exception.
+
  -- Function: Architecture.registers ([ REGGROUP ])
      Return a 'gdb.RegisterDescriptorIterator' (*note Registers In
      Python::) for all of the registers in REGGROUP, a string that is
@@ -191,9 +580,9 @@ of the 'gdb.Architecture' class.
      'gdb.Architecture'.
 
 
-File: gdb.info,  Node: Registers In Python,  Next: TUI Windows In Python,  Prev: Architectures In Python,  Up: Python API
+File: gdb.info,  Node: Registers In Python,  Next: Connections In Python,  Prev: Architectures In Python,  Up: Python API
 
-23.3.2.34 Registers In Python
+23.3.2.35 Registers In Python
 .............................
 
 Python code can request from a 'gdb.Architecture' information about the
@@ -242,9 +631,126 @@ info_registers_reggroup.).
      A string that is the name of this register group.
 
 
-File: gdb.info,  Node: TUI Windows In Python,  Prev: Registers In Python,  Up: Python API
+File: gdb.info,  Node: Connections In Python,  Next: TUI Windows In Python,  Prev: Registers In Python,  Up: Python API
 
-23.3.2.35 Implementing new TUI windows
+23.3.2.36 Connections In Python
+...............................
+
+GDB lets you run and debug multiple programs in a single session.  Each
+program being debugged has a connection, the connection describes how
+GDB controls the program being debugged.  Examples of different
+connection types are 'native' and 'remote'.  *Note Inferiors Connections
+and Programs::.
+
+   Connections in GDB are represented as instances of
+'gdb.TargetConnection', or as one of its sub-classes.  To get a list of
+all connections use 'gdb.connections' (*note gdb.connections:
+gdbpy_connections.).
+
+   To get the connection for a single 'gdb.Inferior' read its
+'gdb.Inferior.connection' attribute (*note gdb.Inferior.connection:
+gdbpy_inferior_connection.).
+
+   Currently there is only a single sub-class of 'gdb.TargetConnection',
+'gdb.RemoteTargetConnection', however, additional sub-classes may be
+added in future releases of GDB.  As a result you should avoid writing
+code like:
+
+     conn = gdb.selected_inferior().connection
+     if type(conn) is gdb.RemoteTargetConnection:
+       print("This is a remote target connection")
+
+as this may fail when more connection types are added.  Instead, you
+should write:
+
+     conn = gdb.selected_inferior().connection
+     if isinstance(conn, gdb.RemoteTargetConnection):
+       print("This is a remote target connection")
+
+   A 'gdb.TargetConnection' has the following method:
+
+ -- Function: TargetConnection.is_valid ()
+     Return 'True' if the 'gdb.TargetConnection' object is valid,
+     'False' if not.  A 'gdb.TargetConnection' will become invalid if
+     the connection no longer exists within GDB, this might happen when
+     no inferiors are using the connection, but could be delayed until
+     the user replaces the current target.
+
+     Reading any of the 'gdb.TargetConnection' properties will throw an
+     exception if the connection is invalid.
+
+   A 'gdb.TargetConnection' has the following read-only properties:
+
+ -- Variable: TargetConnection.num
+     An integer assigned by GDB to uniquely identify this connection.
+     This is the same value as displayed in the 'Num' column of the
+     'info connections' command output (*note info connections:
+     Inferiors Connections and Programs.).
+
+ -- Variable: TargetConnection.type
+     A string that describes what type of connection this is.  This
+     string will be one of the valid names that can be passed to the
+     'target' command (*note target command: Target Commands.).
+
+ -- Variable: TargetConnection.description
+     A string that gives a short description of this target type.  This
+     is the same string that is displayed in the 'Description' column of
+     the 'info connection' command output (*note info connections:
+     Inferiors Connections and Programs.).
+
+ -- Variable: TargetConnection.details
+     An optional string that gives additional information about this
+     connection.  This attribute can be 'None' if there are no
+     additional details for this connection.
+
+     An example of a connection type that might have additional details
+     is the 'remote' connection, in this case the details string can
+     contain the 'HOSTNAME:PORT' that was used to connect to the remote
+     target.
+
+   The 'gdb.RemoteTargetConnection' class is a sub-class of
+'gdb.TargetConnection', and is used to represent 'remote' and
+'extended-remote' connections.  In addition to the attributes and
+methods available from the 'gdb.TargetConnection' base class, a
+'gdb.RemoteTargetConnection' has the following method:
+
+ -- Function: RemoteTargetConnection.send_packet (PACKET)
+     This method sends PACKET to the remote target and returns the
+     response.  The PACKET should either be a 'bytes' object, or a
+     'Unicode' string.
+
+     If PACKET is a 'Unicode' string, then the string is encoded to a
+     'bytes' object using the ASCII codec.  If the string can't be
+     encoded then an 'UnicodeError' is raised.
+
+     If PACKET is not a 'bytes' object, or a 'Unicode' string, then a
+     'TypeError' is raised.  If PACKET is empty then a 'ValueError' is
+     raised.
+
+     The response is returned as a 'bytes' object.  For Python 3 if it
+     is known that the response can be represented as a string then this
+     can be decoded from the buffer.  For example, if it is known that
+     the response is an ASCII string:
+
+          remote_connection.send_packet("some_packet").decode("ascii")
+
+     In Python 2 'bytes' and 'str' are aliases, so the result is already
+     a string, if the response includes non-printable characters, or
+     null characters, then these will be present in the result, care
+     should be taken when processing the result to handle this case.
+
+     The prefix, suffix, and checksum (as required by the remote serial
+     protocol) are automatically added to the outgoing packet, and
+     removed from the incoming packet before the contents of the reply
+     are returned.
+
+     This is equivalent to the 'maintenance packet' command (*note maint
+     packet::).
+
+
+File: gdb.info,  Node: TUI Windows In Python,  Prev: Connections In Python,  Up: Python API
+
+23.3.2.37 Implementing new TUI windows
 ......................................
 
 New TUI (*note TUI::) windows can be implemented in Python.
@@ -347,9 +853,9 @@ underscore to avoid any future conflicts.
 
  -- Function: Window.click (X, Y, BUTTON)
      This is called on a mouse click in this window.  X and Y are the
-     mouse coordinates inside the window (0-based), and BUTTON specifies
-     which mouse button was used, whose values can be 1 (left), 2
-     (middle), or 3 (right).
+     mouse coordinates inside the window (0-based, from the top left
+     corner), and BUTTON specifies which mouse button was used, whose
+     values can be 1 (left), 2 (middle), or 3 (right).
 
 
 File: gdb.info,  Node: Python Auto-loading,  Next: Python modules,  Prev: Python API,  Up: Python
@@ -795,8 +1301,8 @@ more information (*note (guile)Using Guile Modules::).
 
    The '(gdb)' module provides these basic Guile functions.
 
- -- Scheme Procedure: execute command [#:from-tty boolean] [#:to-string
-          boolean]
+ -- Scheme Procedure: execute command [#:from-tty boolean]
+          [#:to-string boolean]
      Evaluate COMMAND, a string, as a GDB CLI command.  If a GDB
      exception happens while COMMAND runs, it is translated as described
      in *note Guile Exception Handling: Guile Exception Handling.
@@ -2106,9 +2612,9 @@ to separate out the side-effect of adding the command to GDB from
    There is no support for multi-line commands, that is commands that
 consist of multiple lines and are terminated with 'end'.
 
- -- Scheme Procedure: (make-command name [#:invoke invoke]
+ -- Scheme Procedure: make-command name [#:invoke invoke]
           [#:command-class command-class] [#:completer-class completer]
-          [#:prefix? prefix] [#:doc doc-string])
+          [#:prefix? prefix] [#:doc doc-string]
 
      The argument NAME is the name of the command.  If NAME consists of
      multiple words, then the initial words are looked for as prefix
@@ -2360,11 +2866,12 @@ parameter to GDB from 'make-parameter'.
    Parameters are exposed to the user via the 'set' and 'show' commands.
 *Note Help::.
 
- -- Scheme Procedure: (make-parameter name [#:command-class
-          command-class] [#:parameter-type parameter-type] [#:enum-list
-          enum-list] [#:set-func set-func] [#:show-func show-func]
-          [#:doc doc] [#:set-doc set-doc] [#:show-doc show-doc]
-          [#:initial-value initial-value])
+ -- Scheme Procedure: make-parameter name
+          [#:command-class command-class]
+          [#:parameter-type parameter-type] [#:enum-list enum-list]
+          [#:set-func set-func] [#:show-func show-func] [#:doc doc]
+          [#:set-doc set-doc] [#:show-doc show-doc]
+          [#:initial-value initial-value]
 
      The argument NAME is the name of the new parameter.  If NAME
      consists of multiple words, then the initial words are looked for
@@ -2990,8 +3497,8 @@ module:
      value, then FRAME must be given.  If FRAME is not given, or if
      FRAME is invalid, then an exception is thrown.
 
- -- Scheme Procedure: lookup-symbol name [#:block block] [#:domain
-          domain]
+ -- Scheme Procedure: lookup-symbol name [#:block block]
+          [#:domain domain]
      This function searches for a symbol by name.  The search scope can
      be restricted to the parameters defined in the optional domain and
      block arguments.
@@ -3200,8 +3707,9 @@ outside of Guile.
    The following breakpoint-related procedures are provided by the
 '(gdb)' module:
 
- -- Scheme Procedure: make-breakpoint location [#:type type] [#:wp-class
-          wp-class] [#:internal internal]
+ -- Scheme Procedure: make-breakpoint location [#:type type]
+          [#:wp-class wp-class] [#:internal internal]
+          [#:temporary temporary]
      Create a new breakpoint at LOCATION, a string naming the location
      of the breakpoint, or an expression that defines a watchpoint.  The
      contents can be any location recognized by the 'break' command, or
@@ -3227,6 +3735,11 @@ outside of Guile.
      breakpoints' (but will be listed with the 'maint info breakpoints'
      command).  If an internal flag is not provided, the breakpoint is
      visible (non-internal).
+
+     The optional TEMPORARY argument makes the breakpoint a temporary
+     breakpoint.  Temporary breakpoints are deleted after they have been
+     hit, after which the Guile breakpoint is no longer usable (although
+     it may be re-registered with 'register-breakpoint!').
 
      When a watchpoint is created, GDB will try to create a hardware
      assisted watchpoint.  If successful, the type of the watchpoint is
@@ -3310,6 +3823,14 @@ outside of Guile.
  -- Scheme Procedure: breakpoint-number breakpoint
      Return the breakpoint's number -- the identifier used by the user
      to manipulate the breakpoint.
+
+ -- Scheme Procedure: breakpoint-temporary? breakpoint
+     Return '#t' if the breakpoint was created as a temporary
+     breakpoint.  Temporary breakpoints are automatically deleted after
+     they've been hit.  Calling this procedure, and all other procedures
+     other than 'breakpoint-valid?' and 'register-breakpoint!', will
+     result in an error after the breakpoint has been hit (since it has
+     been automatically deleted).
 
  -- Scheme Procedure: breakpoint-type breakpoint
      Return the breakpoint's type -- the identifier used to determine
@@ -4675,7 +5196,7 @@ window management.
      Disable TUI mode, returning to the console interpreter.
 
 'info win'
-     List and give the size of all displayed windows.
+     List the names and sizes of all currently displayed windows.
 
 'tui new-layout NAME WINDOW WEIGHT [WINDOW WEIGHT...]'
      Create a new TUI layout.  The new layout will be named NAME, and
@@ -4809,9 +5330,9 @@ window management.
 'winheight NAME -COUNT'
      Change the height of the window NAME by COUNT lines.  Positive
      counts increase the height, while negative counts decrease it.  The
-     NAME parameter can be one of 'src' (the source window), 'cmd' (the
-     command window), 'asm' (the disassembly window), or 'regs' (the
-     register display window).
+     NAME parameter can be the name of any currently visible window.
+     The names of the currently visible windows can be discovered using
+     'info win' (*note info win: info_win_command.).
 
 
 File: gdb.info,  Node: TUI Configuration,  Prev: TUI Commands,  Up: TUI
@@ -5241,8 +5762,7 @@ attaching to the target.  After the frontend has started the executable
 or attached to the target, it can find if asynchronous execution is
 enabled using the '-list-target-features' command.
 
-'-gdb-set mi-async on'
-'-gdb-set mi-async off'
+'-gdb-set mi-async [on|off]'
      Set whether MI is in asynchronous mode.
 
      When 'off', which is the default, MI execution commands (e.g.,
@@ -7310,1237 +7830,5 @@ Example
        frame={addr="0x00007ffff7ae00ed",func="__cxa_begin_catch",
        args=[],from="/lib64/libstdc++.so.6",arch="i386:x86-64"},
        thread-id="1",stopped-threads="all",core="6"
-     (gdb)
-
-
-File: gdb.info,  Node: GDB/MI Program Context,  Next: GDB/MI Thread Commands,  Prev: GDB/MI Catchpoint Commands,  Up: GDB/MI
-
-27.10 GDB/MI Program Context
-============================
-
-The '-exec-arguments' Command
------------------------------
-
-Synopsis
-........
-
-      -exec-arguments ARGS
-
-   Set the inferior program arguments, to be used in the next
-'-exec-run'.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'set args'.
-
-Example
-.......
-
-     (gdb)
-     -exec-arguments -v word
-     ^done
-     (gdb)
-
-The '-environment-cd' Command
------------------------------
-
-Synopsis
-........
-
-      -environment-cd PATHDIR
-
-   Set GDB's working directory.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'cd'.
-
-Example
-.......
-
-     (gdb)
-     -environment-cd /kwikemart/marge/ezannoni/flathead-dev/devo/gdb
-     ^done
-     (gdb)
-
-The '-environment-directory' Command
-------------------------------------
-
-Synopsis
-........
-
-      -environment-directory [ -r ] [ PATHDIR ]+
-
-   Add directories PATHDIR to beginning of search path for source files.
-If the '-r' option is used, the search path is reset to the default
-search path.  If directories PATHDIR are supplied in addition to the
-'-r' option, the search path is first reset and then addition occurs as
-normal.  Multiple directories may be specified, separated by blanks.
-Specifying multiple directories in a single command results in the
-directories added to the beginning of the search path in the same order
-they were presented in the command.  If blanks are needed as part of a
-directory name, double-quotes should be used around the name.  In the
-command output, the path will show up separated by the system
-directory-separator character.  The directory-separator character must
-not be used in any directory name.  If no directories are specified, the
-current search path is displayed.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'dir'.
-
-Example
-.......
-
-     (gdb)
-     -environment-directory /kwikemart/marge/ezannoni/flathead-dev/devo/gdb
-     ^done,source-path="/kwikemart/marge/ezannoni/flathead-dev/devo/gdb:$cdir:$cwd"
-     (gdb)
-     -environment-directory ""
-     ^done,source-path="/kwikemart/marge/ezannoni/flathead-dev/devo/gdb:$cdir:$cwd"
-     (gdb)
-     -environment-directory -r /home/jjohnstn/src/gdb /usr/src
-     ^done,source-path="/home/jjohnstn/src/gdb:/usr/src:$cdir:$cwd"
-     (gdb)
-     -environment-directory -r
-     ^done,source-path="$cdir:$cwd"
-     (gdb)
-
-The '-environment-path' Command
--------------------------------
-
-Synopsis
-........
-
-      -environment-path [ -r ] [ PATHDIR ]+
-
-   Add directories PATHDIR to beginning of search path for object files.
-If the '-r' option is used, the search path is reset to the original
-search path that existed at gdb start-up.  If directories PATHDIR are
-supplied in addition to the '-r' option, the search path is first reset
-and then addition occurs as normal.  Multiple directories may be
-specified, separated by blanks.  Specifying multiple directories in a
-single command results in the directories added to the beginning of the
-search path in the same order they were presented in the command.  If
-blanks are needed as part of a directory name, double-quotes should be
-used around the name.  In the command output, the path will show up
-separated by the system directory-separator character.  The
-directory-separator character must not be used in any directory name.
-If no directories are specified, the current path is displayed.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'path'.
-
-Example
-.......
-
-     (gdb)
-     -environment-path
-     ^done,path="/usr/bin"
-     (gdb)
-     -environment-path /kwikemart/marge/ezannoni/flathead-dev/ppc-eabi/gdb /bin
-     ^done,path="/kwikemart/marge/ezannoni/flathead-dev/ppc-eabi/gdb:/bin:/usr/bin"
-     (gdb)
-     -environment-path -r /usr/local/bin
-     ^done,path="/usr/local/bin:/usr/bin"
-     (gdb)
-
-The '-environment-pwd' Command
-------------------------------
-
-Synopsis
-........
-
-      -environment-pwd
-
-   Show the current working directory.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'pwd'.
-
-Example
-.......
-
-     (gdb)
-     -environment-pwd
-     ^done,cwd="/kwikemart/marge/ezannoni/flathead-dev/devo/gdb"
-     (gdb)
-
-
-File: gdb.info,  Node: GDB/MI Thread Commands,  Next: GDB/MI Ada Tasking Commands,  Prev: GDB/MI Program Context,  Up: GDB/MI
-
-27.11 GDB/MI Thread Commands
-============================
-
-The '-thread-info' Command
---------------------------
-
-Synopsis
-........
-
-      -thread-info [ THREAD-ID ]
-
-   Reports information about either a specific thread, if the THREAD-ID
-parameter is present, or about all threads.  THREAD-ID is the thread's
-global thread ID. When printing information about all threads, also
-reports the global ID of the current thread.
-
-GDB Command
-...........
-
-The 'info thread' command prints the same information about all threads.
-
-Result
-......
-
-The result contains the following attributes:
-
-'threads'
-     A list of threads.  The format of the elements of the list is
-     described in *note GDB/MI Thread Information::.
-
-'current-thread-id'
-     The global id of the currently selected thread.  This field is
-     omitted if there is no selected thread (for example, when the
-     selected inferior is not running, and therefore has no threads) or
-     if a THREAD-ID argument was passed to the command.
-
-Example
-.......
-
-     -thread-info
-     ^done,threads=[
-     {id="2",target-id="Thread 0xb7e14b90 (LWP 21257)",
-        frame={level="0",addr="0xffffe410",func="__kernel_vsyscall",
-                args=[]},state="running"},
-     {id="1",target-id="Thread 0xb7e156b0 (LWP 21254)",
-        frame={level="0",addr="0x0804891f",func="foo",
-                args=[{name="i",value="10"}],
-                file="/tmp/a.c",fullname="/tmp/a.c",line="158",arch="i386:x86_64"},
-                state="running"}],
-     current-thread-id="1"
-     (gdb)
-
-The '-thread-list-ids' Command
-------------------------------
-
-Synopsis
-........
-
-      -thread-list-ids
-
-   Produces a list of the currently known global GDB thread ids.  At the
-end of the list it also prints the total number of such threads.
-
-   This command is retained for historical reasons, the '-thread-info'
-command should be used instead.
-
-GDB Command
-...........
-
-Part of 'info threads' supplies the same information.
-
-Example
-.......
-
-     (gdb)
-     -thread-list-ids
-     ^done,thread-ids={thread-id="3",thread-id="2",thread-id="1"},
-     current-thread-id="1",number-of-threads="3"
-     (gdb)
-
-The '-thread-select' Command
-----------------------------
-
-Synopsis
-........
-
-      -thread-select THREAD-ID
-
-   Make thread with global thread number THREAD-ID the current thread.
-It prints the number of the new current thread, and the topmost frame
-for that thread.
-
-   This command is deprecated in favor of explicitly using the
-'--thread' option to each command.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'thread'.
-
-Example
-.......
-
-     (gdb)
-     -exec-next
-     ^running
-     (gdb)
-     *stopped,reason="end-stepping-range",thread-id="2",line="187",
-     file="../../../devo/gdb/testsuite/gdb.threads/linux-dp.c"
-     (gdb)
-     -thread-list-ids
-     ^done,
-     thread-ids={thread-id="3",thread-id="2",thread-id="1"},
-     number-of-threads="3"
-     (gdb)
-     -thread-select 3
-     ^done,new-thread-id="3",
-     frame={level="0",func="vprintf",
-     args=[{name="format",value="0x8048e9c \"%*s%c %d %c\\n\""},
-     {name="arg",value="0x2"}],file="vprintf.c",line="31",arch="i386:x86_64"}
-     (gdb)
-
-
-File: gdb.info,  Node: GDB/MI Ada Tasking Commands,  Next: GDB/MI Program Execution,  Prev: GDB/MI Thread Commands,  Up: GDB/MI
-
-27.12 GDB/MI Ada Tasking Commands
-=================================
-
-The '-ada-task-info' Command
-----------------------------
-
-Synopsis
-........
-
-      -ada-task-info [ TASK-ID ]
-
-   Reports information about either a specific Ada task, if the TASK-ID
-parameter is present, or about all Ada tasks.
-
-GDB Command
-...........
-
-The 'info tasks' command prints the same information about all Ada tasks
-(*note Ada Tasks::).
-
-Result
-......
-
-The result is a table of Ada tasks.  The following columns are defined
-for each Ada task:
-
-'current'
-     This field exists only for the current thread.  It has the value
-     '*'.
-
-'id'
-     The identifier that GDB uses to refer to the Ada task.
-
-'task-id'
-     The identifier that the target uses to refer to the Ada task.
-
-'thread-id'
-     The global thread identifier of the thread corresponding to the Ada
-     task.
-
-     This field should always exist, as Ada tasks are always implemented
-     on top of a thread.  But if GDB cannot find this corresponding
-     thread for any reason, the field is omitted.
-
-'parent-id'
-     This field exists only when the task was created by another task.
-     In this case, it provides the ID of the parent task.
-
-'priority'
-     The base priority of the task.
-
-'state'
-     The current state of the task.  For a detailed description of the
-     possible states, see *note Ada Tasks::.
-
-'name'
-     The name of the task.
-
-Example
-.......
-
-     -ada-task-info
-     ^done,tasks={nr_rows="3",nr_cols="8",
-     hdr=[{width="1",alignment="-1",col_name="current",colhdr=""},
-     {width="3",alignment="1",col_name="id",colhdr="ID"},
-     {width="9",alignment="1",col_name="task-id",colhdr="TID"},
-     {width="4",alignment="1",col_name="thread-id",colhdr=""},
-     {width="4",alignment="1",col_name="parent-id",colhdr="P-ID"},
-     {width="3",alignment="1",col_name="priority",colhdr="Pri"},
-     {width="22",alignment="-1",col_name="state",colhdr="State"},
-     {width="1",alignment="2",col_name="name",colhdr="Name"}],
-     body=[{current="*",id="1",task-id="   644010",thread-id="1",priority="48",
-     state="Child Termination Wait",name="main_task"}]}
-     (gdb)
-
-
-File: gdb.info,  Node: GDB/MI Program Execution,  Next: GDB/MI Stack Manipulation,  Prev: GDB/MI Ada Tasking Commands,  Up: GDB/MI
-
-27.13 GDB/MI Program Execution
-==============================
-
-These are the asynchronous commands which generate the out-of-band
-record '*stopped'.  Currently GDB only really executes asynchronously
-with remote targets and this interaction is mimicked in other cases.
-
-The '-exec-continue' Command
-----------------------------
-
-Synopsis
-........
-
-      -exec-continue [--reverse] [--all|--thread-group N]
-
-   Resumes the execution of the inferior program, which will continue to
-execute until it reaches a debugger stop event.  If the '--reverse'
-option is specified, execution resumes in reverse until it reaches a
-stop event.  Stop events may include
-   * breakpoints or watchpoints
-   * signals or exceptions
-   * the end of the process (or its beginning under '--reverse')
-   * the end or beginning of a replay log if one is being used.
-   In all-stop mode (*note All-Stop Mode::), may resume only one thread,
-or all threads, depending on the value of the 'scheduler-locking'
-variable.  If '--all' is specified, all threads (in all inferiors) will
-be resumed.  The '--all' option is ignored in all-stop mode.  If the
-'--thread-group' options is specified, then all threads in that thread
-group are resumed.
-
-GDB Command
-...........
-
-The corresponding GDB corresponding is 'continue'.
-
-Example
-.......
-
-     -exec-continue
-     ^running
-     (gdb)
-     @Hello world
-     *stopped,reason="breakpoint-hit",disp="keep",bkptno="2",frame={
-     func="foo",args=[],file="hello.c",fullname="/home/foo/bar/hello.c",
-     line="13",arch="i386:x86_64"}
-     (gdb)
-
-The '-exec-finish' Command
---------------------------
-
-Synopsis
-........
-
-      -exec-finish [--reverse]
-
-   Resumes the execution of the inferior program until the current
-function is exited.  Displays the results returned by the function.  If
-the '--reverse' option is specified, resumes the reverse execution of
-the inferior program until the point where current function was called.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'finish'.
-
-Example
-.......
-
-Function returning 'void'.
-
-     -exec-finish
-     ^running
-     (gdb)
-     @hello from foo
-     *stopped,reason="function-finished",frame={func="main",args=[],
-     file="hello.c",fullname="/home/foo/bar/hello.c",line="7",arch="i386:x86_64"}
-     (gdb)
-
-   Function returning other than 'void'.  The name of the internal GDB
-variable storing the result is printed, together with the value itself.
-
-     -exec-finish
-     ^running
-     (gdb)
-     *stopped,reason="function-finished",frame={addr="0x000107b0",func="foo",
-     args=[{name="a",value="1"],{name="b",value="9"}},
-     file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-     arch="i386:x86_64"},
-     gdb-result-var="$1",return-value="0"
-     (gdb)
-
-The '-exec-interrupt' Command
------------------------------
-
-Synopsis
-........
-
-      -exec-interrupt [--all|--thread-group N]
-
-   Interrupts the background execution of the target.  Note how the
-token associated with the stop message is the one for the execution
-command that has been interrupted.  The token for the interrupt itself
-only appears in the '^done' output.  If the user is trying to interrupt
-a non-running program, an error message will be printed.
-
-   Note that when asynchronous execution is enabled, this command is
-asynchronous just like other execution commands.  That is, first the
-'^done' response will be printed, and the target stop will be reported
-after that using the '*stopped' notification.
-
-   In non-stop mode, only the context thread is interrupted by default.
-All threads (in all inferiors) will be interrupted if the '--all' option
-is specified.  If the '--thread-group' option is specified, all threads
-in that group will be interrupted.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'interrupt'.
-
-Example
-.......
-
-     (gdb)
-     111-exec-continue
-     111^running
-
-     (gdb)
-     222-exec-interrupt
-     222^done
-     (gdb)
-     111*stopped,signal-name="SIGINT",signal-meaning="Interrupt",
-     frame={addr="0x00010140",func="foo",args=[],file="try.c",
-     fullname="/home/foo/bar/try.c",line="13",arch="i386:x86_64"}
-     (gdb)
-
-     (gdb)
-     -exec-interrupt
-     ^error,msg="mi_cmd_exec_interrupt: Inferior not executing."
-     (gdb)
-
-The '-exec-jump' Command
-------------------------
-
-Synopsis
-........
-
-      -exec-jump LOCATION
-
-   Resumes execution of the inferior program at the location specified
-by parameter.  *Note Specify Location::, for a description of the
-different forms of LOCATION.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'jump'.
-
-Example
-.......
-
-     -exec-jump foo.c:10
-     *running,thread-id="all"
-     ^running
-
-The '-exec-next' Command
-------------------------
-
-Synopsis
-........
-
-      -exec-next [--reverse]
-
-   Resumes execution of the inferior program, stopping when the
-beginning of the next source line is reached.
-
-   If the '--reverse' option is specified, resumes reverse execution of
-the inferior program, stopping at the beginning of the previous source
-line.  If you issue this command on the first line of a function, it
-will take you back to the caller of that function, to the source line
-where the function was called.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'next'.
-
-Example
-.......
-
-     -exec-next
-     ^running
-     (gdb)
-     *stopped,reason="end-stepping-range",line="8",file="hello.c"
-     (gdb)
-
-The '-exec-next-instruction' Command
-------------------------------------
-
-Synopsis
-........
-
-      -exec-next-instruction [--reverse]
-
-   Executes one machine instruction.  If the instruction is a function
-call, continues until the function returns.  If the program stops at an
-instruction in the middle of a source line, the address will be printed
-as well.
-
-   If the '--reverse' option is specified, resumes reverse execution of
-the inferior program, stopping at the previous instruction.  If the
-previously executed instruction was a return from another function, it
-will continue to execute in reverse until the call to that function
-(from the current stack frame) is reached.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'nexti'.
-
-Example
-.......
-
-     (gdb)
-     -exec-next-instruction
-     ^running
-
-     (gdb)
-     *stopped,reason="end-stepping-range",
-     addr="0x000100d4",line="5",file="hello.c"
-     (gdb)
-
-The '-exec-return' Command
---------------------------
-
-Synopsis
-........
-
-      -exec-return
-
-   Makes current function return immediately.  Doesn't execute the
-inferior.  Displays the new current frame.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'return'.
-
-Example
-.......
-
-     (gdb)
-     200-break-insert callee4
-     200^done,bkpt={number="1",addr="0x00010734",
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",line="8"}
-     (gdb)
-     000-exec-run
-     000^running
-     (gdb)
-     000*stopped,reason="breakpoint-hit",disp="keep",bkptno="1",
-     frame={func="callee4",args=[],
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
-     fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="8",
-     arch="i386:x86_64"}
-     (gdb)
-     205-break-delete
-     205^done
-     (gdb)
-     111-exec-return
-     111^done,frame={level="0",func="callee3",
-     args=[{name="strarg",
-     value="0x11940 \"A string argument.\""}],
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
-     fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="18",
-     arch="i386:x86_64"}
-     (gdb)
-
-The '-exec-run' Command
------------------------
-
-Synopsis
-........
-
-      -exec-run [ --all | --thread-group N ] [ --start ]
-
-   Starts execution of the inferior from the beginning.  The inferior
-executes until either a breakpoint is encountered or the program exits.
-In the latter case the output will include an exit code, if the program
-has exited exceptionally.
-
-   When neither the '--all' nor the '--thread-group' option is
-specified, the current inferior is started.  If the '--thread-group'
-option is specified, it should refer to a thread group of type
-'process', and that thread group will be started.  If the '--all' option
-is specified, then all inferiors will be started.
-
-   Using the '--start' option instructs the debugger to stop the
-execution at the start of the inferior's main subprogram, following the
-same behavior as the 'start' command (*note Starting::).
-
-GDB Command
-...........
-
-The corresponding GDB command is 'run'.
-
-Examples
-........
-
-     (gdb)
-     -break-insert main
-     ^done,bkpt={number="1",addr="0x0001072c",file="recursive2.c",line="4"}
-     (gdb)
-     -exec-run
-     ^running
-     (gdb)
-     *stopped,reason="breakpoint-hit",disp="keep",bkptno="1",
-     frame={func="main",args=[],file="recursive2.c",
-     fullname="/home/foo/bar/recursive2.c",line="4",arch="i386:x86_64"}
-     (gdb)
-
-Program exited normally:
-
-     (gdb)
-     -exec-run
-     ^running
-     (gdb)
-     x = 55
-     *stopped,reason="exited-normally"
-     (gdb)
-
-Program exited exceptionally:
-
-     (gdb)
-     -exec-run
-     ^running
-     (gdb)
-     x = 55
-     *stopped,reason="exited",exit-code="01"
-     (gdb)
-
-   Another way the program can terminate is if it receives a signal such
-as 'SIGINT'.  In this case, GDB/MI displays this:
-
-     (gdb)
-     *stopped,reason="exited-signalled",signal-name="SIGINT",
-     signal-meaning="Interrupt"
-
-The '-exec-step' Command
-------------------------
-
-Synopsis
-........
-
-      -exec-step [--reverse]
-
-   Resumes execution of the inferior program, stopping when the
-beginning of the next source line is reached, if the next source line is
-not a function call.  If it is, stop at the first instruction of the
-called function.  If the '--reverse' option is specified, resumes
-reverse execution of the inferior program, stopping at the beginning of
-the previously executed source line.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'step'.
-
-Example
-.......
-
-Stepping into a function:
-
-     -exec-step
-     ^running
-     (gdb)
-     *stopped,reason="end-stepping-range",
-     frame={func="foo",args=[{name="a",value="10"},
-     {name="b",value="0"}],file="recursive2.c",
-     fullname="/home/foo/bar/recursive2.c",line="11",arch="i386:x86_64"}
-     (gdb)
-
-   Regular stepping:
-
-     -exec-step
-     ^running
-     (gdb)
-     *stopped,reason="end-stepping-range",line="14",file="recursive2.c"
-     (gdb)
-
-The '-exec-step-instruction' Command
-------------------------------------
-
-Synopsis
-........
-
-      -exec-step-instruction [--reverse]
-
-   Resumes the inferior which executes one machine instruction.  If the
-'--reverse' option is specified, resumes reverse execution of the
-inferior program, stopping at the previously executed instruction.  The
-output, once GDB has stopped, will vary depending on whether we have
-stopped in the middle of a source line or not.  In the former case, the
-address at which the program stopped will be printed as well.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'stepi'.
-
-Example
-.......
-
-     (gdb)
-     -exec-step-instruction
-     ^running
-
-     (gdb)
-     *stopped,reason="end-stepping-range",
-     frame={func="foo",args=[],file="try.c",
-     fullname="/home/foo/bar/try.c",line="10",arch="i386:x86_64"}
-     (gdb)
-     -exec-step-instruction
-     ^running
-
-     (gdb)
-     *stopped,reason="end-stepping-range",
-     frame={addr="0x000100f4",func="foo",args=[],file="try.c",
-     fullname="/home/foo/bar/try.c",line="10",arch="i386:x86_64"}
-     (gdb)
-
-The '-exec-until' Command
--------------------------
-
-Synopsis
-........
-
-      -exec-until [ LOCATION ]
-
-   Executes the inferior until the LOCATION specified in the argument is
-reached.  If there is no argument, the inferior executes until a source
-line greater than the current one is reached.  The reason for stopping
-in this case will be 'location-reached'.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'until'.
-
-Example
-.......
-
-     (gdb)
-     -exec-until recursive2.c:6
-     ^running
-     (gdb)
-     x = 55
-     *stopped,reason="location-reached",frame={func="main",args=[],
-     file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="6",
-     arch="i386:x86_64"}
-     (gdb)
-
-
-File: gdb.info,  Node: GDB/MI Stack Manipulation,  Next: GDB/MI Variable Objects,  Prev: GDB/MI Program Execution,  Up: GDB/MI
-
-27.14 GDB/MI Stack Manipulation Commands
-========================================
-
-The '-enable-frame-filters' Command
------------------------------------
-
-     -enable-frame-filters
-
-   GDB allows Python-based frame filters to affect the output of the MI
-commands relating to stack traces.  As there is no way to implement this
-in a fully backward-compatible way, a front end must request that this
-functionality be enabled.
-
-   Once enabled, this feature cannot be disabled.
-
-   Note that if Python support has not been compiled into GDB, this
-command will still succeed (and do nothing).
-
-The '-stack-info-frame' Command
--------------------------------
-
-Synopsis
-........
-
-      -stack-info-frame
-
-   Get info on the selected frame.
-
-GDB Command
-...........
-
-The corresponding GDB command is 'info frame' or 'frame' (without
-arguments).
-
-Example
-.......
-
-     (gdb)
-     -stack-info-frame
-     ^done,frame={level="1",addr="0x0001076c",func="callee3",
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
-     fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="17",
-     arch="i386:x86_64"}
-     (gdb)
-
-The '-stack-info-depth' Command
--------------------------------
-
-Synopsis
-........
-
-      -stack-info-depth [ MAX-DEPTH ]
-
-   Return the depth of the stack.  If the integer argument MAX-DEPTH is
-specified, do not count beyond MAX-DEPTH frames.
-
-GDB Command
-...........
-
-There's no equivalent GDB command.
-
-Example
-.......
-
-For a stack with frame levels 0 through 11:
-
-     (gdb)
-     -stack-info-depth
-     ^done,depth="12"
-     (gdb)
-     -stack-info-depth 4
-     ^done,depth="4"
-     (gdb)
-     -stack-info-depth 12
-     ^done,depth="12"
-     (gdb)
-     -stack-info-depth 11
-     ^done,depth="11"
-     (gdb)
-     -stack-info-depth 13
-     ^done,depth="12"
-     (gdb)
-
-The '-stack-list-arguments' Command
------------------------------------
-
-Synopsis
-........
-
-      -stack-list-arguments [ --no-frame-filters ] [ --skip-unavailable ] PRINT-VALUES
-         [ LOW-FRAME HIGH-FRAME ]
-
-   Display a list of the arguments for the frames between LOW-FRAME and
-HIGH-FRAME (inclusive).  If LOW-FRAME and HIGH-FRAME are not provided,
-list the arguments for the whole call stack.  If the two arguments are
-equal, show the single frame at the corresponding level.  It is an error
-if LOW-FRAME is larger than the actual number of frames.  On the other
-hand, HIGH-FRAME may be larger than the actual number of frames, in
-which case only existing frames will be returned.
-
-   If PRINT-VALUES is 0 or '--no-values', print only the names of the
-variables; if it is 1 or '--all-values', print also their values; and if
-it is 2 or '--simple-values', print the name, type and value for simple
-data types, and the name and type for arrays, structures and unions.  If
-the option '--no-frame-filters' is supplied, then Python frame filters
-will not be executed.
-
-   If the '--skip-unavailable' option is specified, arguments that are
-not available are not listed.  Partially available arguments are still
-displayed, however.
-
-   Use of this command to obtain arguments in a single frame is
-deprecated in favor of the '-stack-list-variables' command.
-
-GDB Command
-...........
-
-GDB does not have an equivalent command.  'gdbtk' has a 'gdb_get_args'
-command which partially overlaps with the functionality of
-'-stack-list-arguments'.
-
-Example
-.......
-
-     (gdb)
-     -stack-list-frames
-     ^done,
-     stack=[
-     frame={level="0",addr="0x00010734",func="callee4",
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
-     fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="8",
-     arch="i386:x86_64"},
-     frame={level="1",addr="0x0001076c",func="callee3",
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
-     fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="17",
-     arch="i386:x86_64"},
-     frame={level="2",addr="0x0001078c",func="callee2",
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
-     fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="22",
-     arch="i386:x86_64"},
-     frame={level="3",addr="0x000107b4",func="callee1",
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
-     fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="27",
-     arch="i386:x86_64"},
-     frame={level="4",addr="0x000107e0",func="main",
-     file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
-     fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="32",
-     arch="i386:x86_64"}]
-     (gdb)
-     -stack-list-arguments 0
-     ^done,
-     stack-args=[
-     frame={level="0",args=[]},
-     frame={level="1",args=[name="strarg"]},
-     frame={level="2",args=[name="intarg",name="strarg"]},
-     frame={level="3",args=[name="intarg",name="strarg",name="fltarg"]},
-     frame={level="4",args=[]}]
-     (gdb)
-     -stack-list-arguments 1
-     ^done,
-     stack-args=[
-     frame={level="0",args=[]},
-     frame={level="1",
-      args=[{name="strarg",value="0x11940 \"A string argument.\""}]},
-     frame={level="2",args=[
-     {name="intarg",value="2"},
-     {name="strarg",value="0x11940 \"A string argument.\""}]},
-     {frame={level="3",args=[
-     {name="intarg",value="2"},
-     {name="strarg",value="0x11940 \"A string argument.\""},
-     {name="fltarg",value="3.5"}]},
-     frame={level="4",args=[]}]
-     (gdb)
-     -stack-list-arguments 0 2 2
-     ^done,stack-args=[frame={level="2",args=[name="intarg",name="strarg"]}]
-     (gdb)
-     -stack-list-arguments 1 2 2
-     ^done,stack-args=[frame={level="2",
-     args=[{name="intarg",value="2"},
-     {name="strarg",value="0x11940 \"A string argument.\""}]}]
-     (gdb)
-
-The '-stack-list-frames' Command
---------------------------------
-
-Synopsis
-........
-
-      -stack-list-frames [ --no-frame-filters LOW-FRAME HIGH-FRAME ]
-
-   List the frames currently on the stack.  For each frame it displays
-the following info:
-
-'LEVEL'
-     The frame number, 0 being the topmost frame, i.e., the innermost
-     function.
-'ADDR'
-     The '$pc' value for that frame.
-'FUNC'
-     Function name.
-'FILE'
-     File name of the source file where the function lives.
-'FULLNAME'
-     The full file name of the source file where the function lives.
-'LINE'
-     Line number corresponding to the '$pc'.
-'FROM'
-     The shared library where this function is defined.  This is only
-     given if the frame's function is not known.
-'ARCH'
-     Frame's architecture.
-
-   If invoked without arguments, this command prints a backtrace for the
-whole stack.  If given two integer arguments, it shows the frames whose
-levels are between the two arguments (inclusive).  If the two arguments
-are equal, it shows the single frame at the corresponding level.  It is
-an error if LOW-FRAME is larger than the actual number of frames.  On
-the other hand, HIGH-FRAME may be larger than the actual number of
-frames, in which case only existing frames will be returned.  If the
-option '--no-frame-filters' is supplied, then Python frame filters will
-not be executed.
-
-GDB Command
-...........
-
-The corresponding GDB commands are 'backtrace' and 'where'.
-
-Example
-.......
-
-Full stack backtrace:
-
-     (gdb)
-     -stack-list-frames
-     ^done,stack=
-     [frame={level="0",addr="0x0001076c",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="11",
-       arch="i386:x86_64"},
-     frame={level="1",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="2",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="3",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="4",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="5",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="6",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="7",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="8",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="9",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="10",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="11",addr="0x00010738",func="main",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="4",
-       arch="i386:x86_64"}]
-     (gdb)
-
-   Show frames between LOW_FRAME and HIGH_FRAME:
-
-     (gdb)
-     -stack-list-frames 3 5
-     ^done,stack=
-     [frame={level="3",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="4",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"},
-     frame={level="5",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"}]
-     (gdb)
-
-   Show a single frame:
-
-     (gdb)
-     -stack-list-frames 3 3
-     ^done,stack=
-     [frame={level="3",addr="0x000107a4",func="foo",
-       file="recursive2.c",fullname="/home/foo/bar/recursive2.c",line="14",
-       arch="i386:x86_64"}]
-     (gdb)
-
-The '-stack-list-locals' Command
---------------------------------
-
-Synopsis
-........
-
-      -stack-list-locals [ --no-frame-filters ] [ --skip-unavailable ] PRINT-VALUES
-
-   Display the local variable names for the selected frame.  If
-PRINT-VALUES is 0 or '--no-values', print only the names of the
-variables; if it is 1 or '--all-values', print also their values; and if
-it is 2 or '--simple-values', print the name, type and value for simple
-data types, and the name and type for arrays, structures and unions.  In
-this last case, a frontend can immediately display the value of simple
-data types and create variable objects for other data types when the
-user wishes to explore their values in more detail.  If the option
-'--no-frame-filters' is supplied, then Python frame filters will not be
-executed.
-
-   If the '--skip-unavailable' option is specified, local variables that
-are not available are not listed.  Partially available local variables
-are still displayed, however.
-
-   This command is deprecated in favor of the '-stack-list-variables'
-command.
-
-GDB Command
-...........
-
-'info locals' in GDB, 'gdb_get_locals' in 'gdbtk'.
-
-Example
-.......
-
-     (gdb)
-     -stack-list-locals 0
-     ^done,locals=[name="A",name="B",name="C"]
-     (gdb)
-     -stack-list-locals --all-values
-     ^done,locals=[{name="A",value="1"},{name="B",value="2"},
-       {name="C",value="{1, 2, 3}"}]
-     -stack-list-locals --simple-values
-     ^done,locals=[{name="A",type="int",value="1"},
-       {name="B",type="int",value="2"},{name="C",type="int [3]"}]
-     (gdb)
-
-The '-stack-list-variables' Command
------------------------------------
-
-Synopsis
-........
-
-      -stack-list-variables [ --no-frame-filters ] [ --skip-unavailable ] PRINT-VALUES
-
-   Display the names of local variables and function arguments for the
-selected frame.  If PRINT-VALUES is 0 or '--no-values', print only the
-names of the variables; if it is 1 or '--all-values', print also their
-values; and if it is 2 or '--simple-values', print the name, type and
-value for simple data types, and the name and type for arrays,
-structures and unions.  If the option '--no-frame-filters' is supplied,
-then Python frame filters will not be executed.
-
-   If the '--skip-unavailable' option is specified, local variables and
-arguments that are not available are not listed.  Partially available
-arguments and local variables are still displayed, however.
-
-Example
-.......
-
-     (gdb)
-     -stack-list-variables --thread 1 --frame 0 --all-values
-     ^done,variables=[{name="x",value="11"},{name="s",value="{a = 1, b = 2}"}]
-     (gdb)
-
-The '-stack-select-frame' Command
----------------------------------
-
-Synopsis
-........
-
-      -stack-select-frame FRAMENUM
-
-   Change the selected frame.  Select a different frame FRAMENUM on the
-stack.
-
-   This command in deprecated in favor of passing the '--frame' option
-to every command.
-
-GDB Command
-...........
-
-The corresponding GDB commands are 'frame', 'up', 'down',
-'select-frame', 'up-silent', and 'down-silent'.
-
-Example
-.......
-
-     (gdb)
-     -stack-select-frame 2
-     ^done
      (gdb)
 
