@@ -4,7 +4,12 @@
 
 #include <new>
 #include <cstddef>
-#include <genesis.h>
+#include <cstdint>
+
+extern "C" {
+    extern void* MEM_alloc(uint16_t size);
+    extern void MEM_free(void* ptr);
+}
 
 void *operator new(std::size_t size) noexcept
 {

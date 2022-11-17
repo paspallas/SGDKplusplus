@@ -7,10 +7,10 @@ SET "GDK_WIN=%cd%"
 SET "XGCC_WIN=%GDK_WIN%\x68k-gcc\bin"
 SET "PATH=%GDK_WIN%\bin;%XGCC_WIN%;%PATH%"
 
-set DIRS=sample\cplusplus\castilla*
+set DIRS=sample\cplusplus\hello-world
 
 for /D %%i in (%DIRS%) do (
     echo "%%i"
     %GDK_WIN%\bin\make -C "%%i" release -f %GDK_WIN%\makefilecpp.gen
-    rem %GDK_WIN%\bin\make -C "%%i" distclean -f %GDK_WIN%\makefilecpp.gen 
+    %GDK_WIN%\bin\make -C "%%i" distclean -f %GDK_WIN%\makefilecpp.gen 
 )  

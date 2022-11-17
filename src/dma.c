@@ -208,12 +208,9 @@ void DMA_flushQueue()
             i = queueIndexLimit;
 
 #if (LIB_LOG_LEVEL >= LOG_LEVEL_WARNING)
-            KLog_U3_("DMA_flushQueue(..) warning: frame #", vtimer, " - transfer size is above ", maxTransferPerFrame, " bytes (", queueTransferSize, "), some transfers are ignored.");
+            KLog_U3_("DMA_flushQueue(..) warning: frame #", vtimer, " - transfer size is above ", maxTransferPerFrame, " bytes (", queueTransferSize, "), some transfers are ignored !");
 #endif
         }
-#if (LIB_LOG_LEVEL >= LOG_LEVEL_WARNING)
-        else KLog_U3_("DMA_flushQueue(..) warning: frame #", vtimer, " - transfer size is above ", maxTransferPerFrame, " bytes (", queueTransferSize, ").");
-#endif
     }
 
 #ifdef DMA_DEBUG
@@ -268,7 +265,7 @@ void DMA_flushQueue()
 //static void flushQueue(u16 num)
 //{
 //    u32 *info = (u32*) dmaQueues;
-//    vu32 *pl = (vu32*) GFX_CTRL_PORT;
+//    vu32 *pl = (vu32*) VDP_CTRL_PORT;
 //    u16 i = num;
 //
 //    // flush DMA queue
@@ -277,7 +274,7 @@ void DMA_flushQueue()
 //        *pl = *info++;  // regLen = 0x94000x9300 | (len | (len << 8) & 0xFF00FF)
 //        *pl = *info++;  // regAddrMStep = 0x96008F00 | ((from << 7) & 0xFF0000) | step
 //        *pl = *info++;  // regAddrHAddrL = 0x97009500 | ((from >> 1) & 0x7F00FF)
-//        *pl = *info++;  // regCtrlWrite =  GFX_DMA_xxx_ADDR(to)
+//        *pl = *info++;  // regCtrlWrite =  VDP_DMA_xxx_ADDR(to)
 //    }
 //}
 //
@@ -288,7 +285,7 @@ void DMA_flushQueue()
 //    const u16 z80on = z80restore;
 //
 //    u32 *info = (u32*) dmaQueues;
-//    vu32 *pl = (vu32*) GFX_CTRL_PORT;
+//    vu32 *pl = (vu32*) VDP_CTRL_PORT;
 //    vu16 *pw = (vu16*) Z80_HALT_PORT;
 //    u16 i = num;
 //
@@ -308,7 +305,7 @@ void DMA_flushQueue()
 //        *pw = z80on;
 //
 //        // then trigger DMA
-//        *pl = *info++;  // regCtrlWrite =  GFX_DMA_xxx_ADDR(to)
+//        *pl = *info++;  // regCtrlWrite =  VDP_DMA_xxx_ADDR(to)
 //    }
 //}
 
@@ -477,7 +474,7 @@ bool DMA_queueDma(u8 location, void* from, u16 to, u16 len, u16 step)
     switch(location)
     {
     case DMA_VRAM:
-        info->regCtrlWrite = GFX_DMA_VRAM_ADDR((u32)to);
+        info->regCtrlWrite = VDP_DMA_VRAM_ADDR((u32)to);
 #ifdef DMA_DEBUG
         KLog_U4("DMA_queueDma: VRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
 #endif
@@ -486,7 +483,7 @@ bool DMA_queueDma(u8 location, void* from, u16 to, u16 len, u16 step)
         break;
 
     case DMA_CRAM:
-        info->regCtrlWrite = GFX_DMA_CRAM_ADDR((u32)to);
+        info->regCtrlWrite = VDP_DMA_CRAM_ADDR((u32)to);
 #ifdef DMA_DEBUG
         KLog_U4("DMA_queueDma: CRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
 #endif
@@ -495,7 +492,7 @@ bool DMA_queueDma(u8 location, void* from, u16 to, u16 len, u16 step)
         break;
 
     case DMA_VSRAM:
-        info->regCtrlWrite = GFX_DMA_VSRAM_ADDR((u32)to);
+        info->regCtrlWrite = VDP_DMA_VSRAM_ADDR((u32)to);
 #ifdef DMA_DEBUG
         KLog_U4("DMA_queueDma: VSRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
 #endif
@@ -518,7 +515,7 @@ bool DMA_queueDma(u8 location, void* from, u16 to, u16 len, u16 step)
         if (queueIndexLimit == 0)
         {
 #if (LIB_LOG_LEVEL >= LOG_LEVEL_WARNING)
-            KLog_S4("DMA_queueDma(..) warning: transfer size limit raised for transfer #", queueIndex - 1, " on frame #", vtimer, ", current size = ", queueTransferSize, "  max allowed = ", maxTransferPerFrame);
+            KLog_S4("DMA_queueDma(..) warning: transfer size limit raised on transfer #", queueIndex - 1, " on frame #", vtimer, ", current size = ", queueTransferSize, "  max allowed = ", maxTransferPerFrame);
 #endif
 
             // store limit index
@@ -545,7 +542,7 @@ bool DMA_queueDmaFast(u8 location, void* from, u16 to, u16 len, u16 step)
     if (queueIndex >= queueSize)
     {
 #if (LIB_LOG_LEVEL >= LOG_LEVEL_ERROR)
-        KDebug_Alert("DMA_queueDma(..) failed: queue is full ! Try to increase queue size using DMA_setMaxQueueSize(..)");
+        KDebug_Alert("DMA_queueDmaFast(..) failed: queue is full ! Try to increase queue size using DMA_setMaxQueueSize(..)");
 #endif
 
         // return FALSE as transfer will be ignored
@@ -568,32 +565,32 @@ bool DMA_queueDmaFast(u8 location, void* from, u16 to, u16 len, u16 step)
     // Trigger DMA
     switch(location)
     {
-    case DMA_VRAM:
-        info->regCtrlWrite = GFX_DMA_VRAM_ADDR((u32)to);
-#ifdef DMA_DEBUG
-        KLog_U4("DMA_queueDma: VRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
-#endif
-        // keep trace of transferred size
-        queueTransferSize += len << 1;
-        break;
+        case DMA_VRAM:
+            info->regCtrlWrite = VDP_DMA_VRAM_ADDR((u32)to);
+    #ifdef DMA_DEBUG
+            KLog_U4("DMA_queueDma: VRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
+    #endif
+            // keep trace of transferred size
+            queueTransferSize += len << 1;
+            break;
 
-    case DMA_CRAM:
-        info->regCtrlWrite = GFX_DMA_CRAM_ADDR((u32)to);
-#ifdef DMA_DEBUG
-        KLog_U4("DMA_queueDma: CRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
-#endif
-        // keep trace of transferred size (only half as CRAM trasnfer are 16 bit wide)
-        queueTransferSize += len;
-        break;
+        case DMA_CRAM:
+            info->regCtrlWrite = VDP_DMA_CRAM_ADDR((u32)to);
+    #ifdef DMA_DEBUG
+            KLog_U4("DMA_queueDma: CRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
+    #endif
+            // keep trace of transferred size (only half as CRAM trasnfer are 16 bit wide)
+            queueTransferSize += len;
+            break;
 
-    case DMA_VSRAM:
-        info->regCtrlWrite = GFX_DMA_VSRAM_ADDR((u32)to);
-#ifdef DMA_DEBUG
-        KLog_U4("DMA_queueDma: VSRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
-#endif
-        // keep trace of transferred size (only half as VSRAM trasnfer are 16 bit wide)
-        queueTransferSize += len;
-        break;
+        case DMA_VSRAM:
+            info->regCtrlWrite = VDP_DMA_VSRAM_ADDR((u32)to);
+    #ifdef DMA_DEBUG
+            KLog_U4("DMA_queueDma: VSRAM from=", fromAddr, " to=", to, " len=", len, " step=", step);
+    #endif
+            // keep trace of transferred size (only half as VSRAM trasnfer are 16 bit wide)
+            queueTransferSize += len;
+            break;
     }
 
     // pass to next index
@@ -610,9 +607,8 @@ bool DMA_queueDmaFast(u8 location, void* from, u16 to, u16 len, u16 step)
         if (queueIndexLimit == 0)
         {
 #if (LIB_LOG_LEVEL >= LOG_LEVEL_WARNING)
-            KLog_S4("DMA_queueDma(..) warning: transfer size limit raised on transfer #", queueIndex - 1, " on frame #", vtimer, ", current size = ", queueTransferSize, "  max allowed = ", maxTransferPerFrame);
+            KLog_S4("DMA_queueDmaFast(..) warning: transfer size limit raised on transfer #", queueIndex - 1, " on frame #", vtimer, ", current size = ", queueTransferSize, "  max allowed = ", maxTransferPerFrame);
 #endif
-
             // store limit index
             queueIndexLimit = queueIndex - 1;
 
@@ -667,7 +663,7 @@ void DMA_doDma(u8 location, void* from, u16 to, u16 len, s16 step)
             VDP_setAutoInc(step);
     }
 
-    pw = (vu16*) GFX_CTRL_PORT;
+    pw = (vu16*) VDP_CTRL_PORT;
 
     // Setup DMA length (in word here)
     *pw = 0x9300 + (newLen & 0xff);
@@ -685,15 +681,15 @@ void DMA_doDma(u8 location, void* from, u16 to, u16 len, s16 step)
     {
         default:
         case DMA_VRAM:
-            cmd = GFX_DMA_VRAM_ADDR((u32)to);
+            cmd = VDP_DMA_VRAM_ADDR((u32)to);
             break;
 
         case DMA_CRAM:
-            cmd = GFX_DMA_CRAM_ADDR((u32)to);
+            cmd = VDP_DMA_CRAM_ADDR((u32)to);
             break;
 
         case DMA_VSRAM:
-            cmd = GFX_DMA_VSRAM_ADDR((u32)to);
+            cmd = VDP_DMA_VSRAM_ADDR((u32)to);
             break;
     }
 
@@ -742,7 +738,7 @@ void DMA_doDmaFast(u8 location, void* from, u16 to, u16 len, s16 step)
     if (step != -1)
         VDP_setAutoInc(step);
 
-    pw = (vu16*) GFX_CTRL_PORT;
+    pw = (vu16*) VDP_CTRL_PORT;
 
     // Setup DMA length (in word here)
     *pw = 0x9300 + (len & 0xff);
@@ -760,15 +756,15 @@ void DMA_doDmaFast(u8 location, void* from, u16 to, u16 len, s16 step)
     {
         default:
         case DMA_VRAM:
-            cmd = GFX_DMA_VRAM_ADDR((u32)to);
+            cmd = VDP_DMA_VRAM_ADDR((u32)to);
             break;
 
         case DMA_CRAM:
-            cmd = GFX_DMA_CRAM_ADDR((u32)to);
+            cmd = VDP_DMA_CRAM_ADDR((u32)to);
             break;
 
         case DMA_VSRAM:
-            cmd = GFX_DMA_VSRAM_ADDR((u32)to);
+            cmd = VDP_DMA_VSRAM_ADDR((u32)to);
             break;
     }
 
@@ -805,15 +801,15 @@ void DMA_doCPUCopy(u8 location, void* from, u16 to, u16 len, s16 step)
     {
         default:
         case DMA_VRAM:
-            cmd = GFX_WRITE_VRAM_ADDR((u32)to);
+            cmd = VDP_WRITE_VRAM_ADDR((u32)to);
             break;
 
         case DMA_CRAM:
-            cmd = GFX_WRITE_CRAM_ADDR((u32)to);
+            cmd = VDP_WRITE_CRAM_ADDR((u32)to);
             break;
 
         case DMA_VSRAM:
-            cmd = GFX_WRITE_VSRAM_ADDR((u32)to);
+            cmd = VDP_WRITE_VSRAM_ADDR((u32)to);
             break;
     }
 
@@ -833,14 +829,14 @@ void DMA_doCPUCopyDirect(u32 cmd, void* from, u16 len, s16 step)
     if (step != -1)
         VDP_setAutoInc(step);
 
-    plctrl = (vu32*) GFX_CTRL_PORT;
+    plctrl = (vu32*) VDP_CTRL_PORT;
     *plctrl = cmd;
 
     il = len / 16;
     iw = len & 0xF;
 
     srcl = (u32*) from;
-    pldata = (vu32*) GFX_DATA_PORT;
+    pldata = (vu32*) VDP_DATA_PORT;
 
     while(il--)
     {
@@ -855,7 +851,7 @@ void DMA_doCPUCopyDirect(u32 cmd, void* from, u16 len, s16 step)
     }
 
     srcw = (u16*) srcl;
-    pwdata = (vu16*) GFX_DATA_PORT;
+    pwdata = (vu16*) VDP_DATA_PORT;
 
     while(iw--) *pwdata = *srcw++;
 }
@@ -892,7 +888,7 @@ void DMA_doVRamFill(u16 to, u16 len, u8 value, s16 step)
 //    DMA_doVRamFill(0, 2, 0xFF, 1);    // 01-3
 //    DMA_doVRamFill(0, 2, 0xFF, 1);    // 0123
 
-    pw = (vu16*) GFX_CTRL_PORT;
+    pw = (vu16*) VDP_CTRL_PORT;
 
     // Setup DMA length
     *pw = 0x9300 + (l & 0xFF);
@@ -902,11 +898,11 @@ void DMA_doVRamFill(u16 to, u16 len, u8 value, s16 step)
     *pw = 0x9780;
 
     // Write VRam DMA destination address
-    pl = (vu32*) GFX_CTRL_PORT;
-    *pl = GFX_DMA_VRAM_ADDR((u32)to);
+    pl = (vu32*) VDP_CTRL_PORT;
+    *pl = VDP_DMA_VRAM_ADDR((u32)to);
 
     // set up value to fill (need to be 16 bits extended)
-    pw = (vu16*) GFX_DATA_PORT;
+    pw = (vu16*) VDP_DATA_PORT;
     *pw = value | (value << 8);
 }
 
@@ -918,7 +914,7 @@ void DMA_doVRamCopy(u16 from, u16 to, u16 len, s16 step)
     if (step != -1)
         VDP_setAutoInc(step);
 
-    pw = (vu16*) GFX_CTRL_PORT;
+    pw = (vu16*) VDP_CTRL_PORT;
 
     // Setup DMA length
     *pw = 0x9300 + (len & 0xff);
@@ -932,8 +928,8 @@ void DMA_doVRamCopy(u16 from, u16 to, u16 len, s16 step)
     *pw = 0x97C0;
 
     // Write VRam DMA destination address (start DMA copy operation)
-    pl = (vu32*) GFX_CTRL_PORT;
-    *pl = GFX_DMA_VRAMCOPY_ADDR((u32)to);
+    pl = (vu32*) VDP_CTRL_PORT;
+    *pl = VDP_DMA_VRAMCOPY_ADDR((u32)to);
 }
 
 void DMA_waitCompletion()

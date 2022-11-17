@@ -90,6 +90,10 @@ asm: FLAGS= $(DEFAULT_FLAGS) 			\
 
 asm: pre-build $(LSTS)
 
+# include ext.mk if it exists (better to do it after release rule definition)
+ifneq ("$(wildcard $(GDK)/ext.mk)","")
+    include $(GDK)/ext.mk
+endif
 
 all: release
 default: release
@@ -154,7 +158,8 @@ out/rom.out: out/sega.o $(OBJS)
 	-Wl,--gc-sections -Wl,-Map,out/rom.map -Wl,--check-sections
 
 out/sega.o: $(SRC)/boot/sega.s out/rom_head.bin
-	@$(CC) -x assembler-with-cpp $(DEFAULT_FLAGS) -c $(SRC)/boot/sega.s -o $@
+	@$(CC) -x assembler-with-cpp -Wa,--register-prefix-optional,--bitwise-or \
+    $(DEFAULT_FLAGS) -c $(SRC)/boot/sega.s -o $@
 
 out/rom_head.bin: out/rom_head.o
 	@$(OBJCPY) -O binary $< $@
@@ -167,7 +172,6 @@ $(SRC)/boot/sega.s: $(SRC_LIB)/boot/sega.s
 
 $(SRC)/boot/rom_head.c: $(SRC_LIB)/boot/rom_head.c
 	@$(CP) $< $@
-
 
 out/%.lst: %.c
 	@$(ECHO) " CC $(notdir $<)"
@@ -182,11 +186,11 @@ out/%.o: %.c
 out/%.o: %.s
 	@$(ECHO) " AS $(notdir $<)"
 	@$(MKDIR) -p $(dir $@)
-	@$(CC) -x assembler-with-cpp $(FLAGS) -MMD -c $< -o $@
+	@$(CC) -x assembler-with-cpp -Wa,--register-prefix-optional,--bitwise-or $(FLAGS) -MMD -c $< -o $@
 
 out/%.o: %.rs
 	@$(MKDIR) -p $(dir $@)
-	@$(CC) -x assembler-with-cpp $(FLAGS) -c $*.rs -o $@
+	@$(CC) -x assembler-with-cpp -Wa,--register-prefix-optional,--bitwise-or $(FLAGS) -c $*.rs -o $@
 	@$(CP) $*.d out/$*.d
 	@$(RM) $*.d
 

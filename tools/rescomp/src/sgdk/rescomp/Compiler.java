@@ -2,18 +2,24 @@ package sgdk.rescomp;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import sgdk.rescomp.processor.AlignProcessor;
 import sgdk.rescomp.processor.BinProcessor;
@@ -21,6 +27,7 @@ import sgdk.rescomp.processor.BitmapProcessor;
 import sgdk.rescomp.processor.ImageProcessor;
 import sgdk.rescomp.processor.MapProcessor;
 import sgdk.rescomp.processor.NearProcessor;
+import sgdk.rescomp.processor.ObjectsProcessor;
 import sgdk.rescomp.processor.PaletteProcessor;
 import sgdk.rescomp.processor.SpriteProcessor;
 import sgdk.rescomp.processor.TilemapProcessor;
@@ -31,7 +38,6 @@ import sgdk.rescomp.processor.XgmProcessor;
 import sgdk.rescomp.resource.Align;
 import sgdk.rescomp.resource.Bin;
 import sgdk.rescomp.resource.Bitmap;
-import sgdk.rescomp.resource.Image;
 import sgdk.rescomp.resource.Near;
 import sgdk.rescomp.resource.Palette;
 import sgdk.rescomp.resource.Sprite;
@@ -48,6 +54,7 @@ import sgdk.tool.StringUtil;
 
 public class Compiler
 {
+    private final static String EXT_JAR_NAME = "rescomp_ext.jar";
     // private final static String REGEX_LETTERS = "[a-zA-Z]";
     // private final static String REGEX_ID = "\\b([A-Za-z][A-Za-z0-9_]*)\\b";
 
@@ -67,6 +74,7 @@ public class Compiler
         resourceProcessors.add(new TilesetProcessor());
         resourceProcessors.add(new TilemapProcessor());
         resourceProcessors.add(new MapProcessor());
+        resourceProcessors.add(new ObjectsProcessor());
         resourceProcessors.add(new ImageProcessor());
         resourceProcessors.add(new SpriteProcessor());
         resourceProcessors.add(new WavProcessor());
@@ -78,12 +86,17 @@ public class Compiler
     public static String resDir;
 
     // map storing all resources (same object for key and value as we want fast 'contains' check)
-    public static Map<Resource, Resource> resources = new HashMap<>();
+    public final static Map<Resource, Resource> resources = new HashMap<>();
     // list to preserve order
-    public static List<Resource> resourcesList = new ArrayList<>();
+    public final static List<Resource> resourcesList = new ArrayList<>();
 
     // set storing all resource paths
-    public static Set<String> resourcesFile = new HashSet<>();
+    public final static Set<String> resourcesFile = new HashSet<>();
+
+    public static boolean extensionsLoaded = false;
+    
+    // TODO: set that to false on release 
+    public static boolean DAGame = false;
 
     public static boolean compile(String fileName, String fileNameOut, boolean header, String depTarget)
     {
@@ -166,7 +179,11 @@ public class Compiler
             else
             {
                 addResource(resource);
-                System.out.println("'" + resource.id + "' raw size: " + resource.totalSize() + " bytes");
+                // show raw size
+                System.out.println(" '" + resource.id + "' raw size: " + resource.totalSize() + " bytes");
+                // show more infos for MAP type resource
+                if (resource instanceof sgdk.rescomp.resource.Map)
+                    System.out.println(resource.toString());
             }
         }
 
@@ -193,70 +210,51 @@ public class Compiler
 
             // -- BINARY SECTION --
 
-            // get BIN resources
-            final List<Resource> binResources = getResources(Bin.class);
-            final List<Resource> binResourcesOfPalette = getBinResourcesOf(Palette.class);
-            final List<Resource> binResourcesOfTilemap;
-            final List<Resource> binResourcesOfTileset;
-            final List<Resource> binResourcesOfBitmap;
-            final List<Resource> binResourcesOfMap;
+            // get "near" BIN resources
+            final List<Bin> binResources = getBinResources(false);
+            // get "far" BIN resources
+            final List<Bin> farBinResources = getBinResources(true);
 
-            // keep raw BIN resources only
-            binResources.removeAll(binResourcesOfPalette);
-
-            if (group)
-            {
-                // get BIN resources grouped by type for better compression
-                binResourcesOfTilemap = getBinResourcesOf(Tilemap.class);
-                binResourcesOfTileset = getBinResourcesOf(Tileset.class);
-                binResourcesOfBitmap = getBinResourcesOf(Bitmap.class);
-                binResourcesOfMap = getBinResourcesOf(sgdk.rescomp.resource.Map.class);
-
-                // keep raw BIN resources only
-                binResources.removeAll(binResourcesOfTilemap);
-                binResources.removeAll(binResourcesOfTileset);
-                binResources.removeAll(binResourcesOfBitmap);
-                binResources.removeAll(binResourcesOfMap);
-            }
-            else
-            {
-                binResourcesOfTilemap = new ArrayList<>();
-                binResourcesOfTileset = new ArrayList<>();
-                binResourcesOfBitmap = new ArrayList<>();
-                binResourcesOfMap = new ArrayList<>();
-            }
-
-            // get "far" BIN resources (palette BIN data are never far)
-            final List<Resource> farBinResources = getFarBinResourcesOf(binResources);
-            final List<Resource> farBinResourcesOfTilemap;
-            final List<Resource> farBinResourcesOfTileset;
-            final List<Resource> farBinResourcesOfBitmap;
-            final List<Resource> farBinResourcesOfMap;
-
-            // keep "non far" BIN resources only
-            binResources.removeAll(farBinResources);
+            // get "near" palette BIN resources (we always want them first and palette BIN data are never "far")
+            final List<Bin> binResourcesOfPalette = getInternalBinResourcesOf(null, Palette.class, false);
+            // grouped "near" internal bin resources
+            final List<Bin> groupedInternalBinResources = new ArrayList<>();
+            // grouped "far" internal bin resources
+            final List<Bin> farGroupedInternalBinResources = new ArrayList<>();
 
             if (group)
             {
+                // get "near" BIN resources grouped by type for better compression
+                getInternalBinResourcesOf(groupedInternalBinResources, Tilemap.class, false);
+                getInternalBinResourcesOf(groupedInternalBinResources, Tileset.class, false);
+                getInternalBinResourcesOf(groupedInternalBinResources, Bitmap.class, false);
+                getInternalBinResourcesOf(groupedInternalBinResources, sgdk.rescomp.resource.Map.class, false);
+
+                // remove BIN palette resources (just for safety, we already had a tileset bin data = palette bin data)
+                groupedInternalBinResources.removeAll(binResourcesOfPalette);
+
                 // get "far" BIN resources grouped by type for better compression
-                farBinResourcesOfTilemap = getFarBinResourcesOf(binResourcesOfTilemap);
-                farBinResourcesOfTileset = getFarBinResourcesOf(binResourcesOfTileset);
-                farBinResourcesOfBitmap = getFarBinResourcesOf(binResourcesOfBitmap);
-                farBinResourcesOfMap = getFarBinResourcesOf(binResourcesOfMap);
+                getInternalBinResourcesOf(farGroupedInternalBinResources, Tilemap.class, true);
+                getInternalBinResourcesOf(farGroupedInternalBinResources, Tileset.class, true);
+                getInternalBinResourcesOf(farGroupedInternalBinResources, Bitmap.class, true);
+                getInternalBinResourcesOf(farGroupedInternalBinResources, sgdk.rescomp.resource.Map.class, true);
+            }
 
-                // keep "non far" BIN resources only
-                binResourcesOfTilemap.removeAll(farBinResourcesOfTilemap);
-                binResourcesOfTileset.removeAll(farBinResourcesOfTileset);
-                binResourcesOfBitmap.removeAll(farBinResourcesOfBitmap);
-                binResourcesOfMap.removeAll(farBinResourcesOfMap);
-            }
-            else
-            {
-                farBinResourcesOfTilemap = new ArrayList<>();
-                farBinResourcesOfTileset = new ArrayList<>();
-                farBinResourcesOfBitmap = new ArrayList<>();
-                farBinResourcesOfMap = new ArrayList<>();
-            }
+            // remove grouped and Palette "near" BIN resources
+            binResources.removeAll(binResourcesOfPalette);
+            binResources.removeAll(groupedInternalBinResources);
+            // remove grouped "far" BIN resources
+            farBinResources.removeAll(farGroupedInternalBinResources);
+
+            // get all non BIN resources
+            final List<Resource> nonBinResources = getNonBinResources();
+            // get non BIN resources for VDPSprite and Collision (they can be compressed as binary data doesn't store any pointer/reference)
+            final List<Resource> vdpSpriteResources = getResources(VDPSprite.class);
+            final List<Resource> collisionResources = getResources(Collision.class);
+
+            // remove exported resources
+            nonBinResources.removeAll(vdpSpriteResources);
+            nonBinResources.removeAll(collisionResources);
 
             // export binary data first !! very important !!
             // otherwise metadata structures can't properly get BIN.doneCompression field value
@@ -266,9 +264,9 @@ public class Compiler
             // reset binary buffer
             outB.reset();
 
-            // export simple and safe "metadata" resources which can be compressed (binary data without reference)
-            exportResources(getResources(VDPSprite.class), outB, outS, outH);
-            exportResources(getResources(Collision.class), outB, outS, outH);
+            // export simple and safe "metadata" resources which can be compressed first
+            exportResources(vdpSpriteResources, outB, outS, outH);
+            exportResources(collisionResources, outB, outS, outH);
 
             // BIN Read Only Data section
             outS.append(".section .rodata_bin\n\n");
@@ -278,28 +276,7 @@ public class Compiler
             // then export "not far" BIN resources by type for better compression
             exportResources(binResourcesOfPalette, outB, outS, outH);
             exportResources(binResources, outB, outS, outH);
-            // remove already exported ones (just for safety, we already had a tileset bin data = palette bin data)
-            binResourcesOfTilemap.removeAll(binResourcesOfPalette);
-            binResourcesOfTilemap.removeAll(binResources);
-            exportResources(binResourcesOfTilemap, outB, outS, outH);
-            // remove already exported ones (just for safety, we already had a tileset bin data = palette bin data)
-            binResourcesOfTileset.removeAll(binResourcesOfPalette);
-            binResourcesOfTileset.removeAll(binResources);
-            binResourcesOfTileset.removeAll(binResourcesOfTilemap);
-            exportResources(binResourcesOfTileset, outB, outS, outH);
-            // remove already exported ones (just for safety, we already had a tileset bin data = palette bin data)
-            binResourcesOfBitmap.removeAll(binResourcesOfPalette);
-            binResourcesOfBitmap.removeAll(binResources);
-            binResourcesOfBitmap.removeAll(binResourcesOfTilemap);
-            binResourcesOfBitmap.removeAll(binResourcesOfTileset);
-            exportResources(binResourcesOfBitmap, outB, outS, outH);
-            // remove already exported ones (just for safety, we already had a tileset bin data = palette bin data)
-            binResourcesOfMap.removeAll(binResourcesOfPalette);
-            binResourcesOfMap.removeAll(binResources);
-            binResourcesOfMap.removeAll(binResourcesOfTilemap);
-            binResourcesOfMap.removeAll(binResourcesOfTileset);
-            binResourcesOfMap.removeAll(binResourcesOfBitmap);
-            exportResources(binResourcesOfMap, outB, outS, outH);
+            exportResources(groupedInternalBinResources, outB, outS, outH);
 
             // FAR BIN Read Only Data section if NEAR not enabled
             if (!near)
@@ -319,40 +296,15 @@ public class Compiler
 
             // then export "far" BIN resources by type for better compression
             exportResources(farBinResources, outB, outS, outH);
-            // remove already exported ones (just for safety, we already had a tileset bin data = palette bin data)
-            farBinResourcesOfTilemap.removeAll(farBinResources);
-            exportResources(farBinResourcesOfTilemap, outB, outS, outH);
-            // remove already exported ones (just for safety, we already had a tileset bin data = palette bin data)
-            farBinResourcesOfTileset.removeAll(farBinResources);
-            farBinResourcesOfTileset.removeAll(farBinResourcesOfTilemap);
-            exportResources(farBinResourcesOfTileset, outB, outS, outH);
-            // remove already exported ones (just for safety, we already had a tileset bin data = palette bin data)
-            farBinResourcesOfBitmap.removeAll(farBinResources);
-            farBinResourcesOfBitmap.removeAll(farBinResourcesOfTilemap);
-            farBinResourcesOfBitmap.removeAll(farBinResourcesOfTileset);
-            exportResources(farBinResourcesOfBitmap, outB, outS, outH);
-            // remove already exported ones (just for safety, we already had a tileset bin data = palette bin data)
-            farBinResourcesOfMap.removeAll(farBinResources);
-            farBinResourcesOfMap.removeAll(farBinResourcesOfTilemap);
-            farBinResourcesOfMap.removeAll(farBinResourcesOfTileset);
-            farBinResourcesOfMap.removeAll(farBinResourcesOfBitmap);
-            exportResources(farBinResourcesOfMap, outB, outS, outH);
+            exportResources(farGroupedInternalBinResources, outB, outS, outH);
 
             // Read Only Data section
             outS.append(".section .rodata\n\n");
             // need to reset binary buffer
             outB.reset();
 
-            // and finally export "metadata" *after* binary data (no compression possible)
-            exportResources(getResources(Palette.class), outB, outS, outH);
-            exportResources(getResources(Tileset.class), outB, outS, outH);
-            exportResources(getResources(Tilemap.class), outB, outS, outH);
-            exportResources(getResources(SpriteFrame.class), outB, outS, outH);
-            exportResources(getResources(SpriteAnimation.class), outB, outS, outH);
-            exportResources(getResources(Sprite.class), outB, outS, outH);
-            exportResources(getResources(Image.class), outB, outS, outH);
-            exportResources(getResources(Bitmap.class), outB, outS, outH);
-            exportResources(getResources(sgdk.rescomp.resource.Map.class), outB, outS, outH);
+            // and finally export "metadata" (non BIN) *after* binary data (no compression possible)
+            exportResources(nonBinResources, outB, outS, outH);
 
             outH.append("\n");
             outH.append("#endif // _" + headerName + "_H_\n");
@@ -384,46 +336,36 @@ public class Compiler
             if (unpackedSize > 0)
                 System.out.println("  Unpacked: " + unpackedSize + " bytes");
             if (packedSize > 0)
-                System.out.println(
-                        "  Packed: " + packedSize + " bytes (" + Math.round((packedSize * 100f) / packedRawSize)
-                                + "% - origin size: " + packedRawSize + " bytes)");
+                System.out.println("  Packed: " + packedSize + " bytes (" + Math.round((packedSize * 100f) / packedRawSize) + "% - origin size: "
+                        + packedRawSize + " bytes)");
 
             int spriteMetaSize = 0;
+
+            // get all sprite related resources
+            final List<Resource> allSpritesResources = getResources(Sprite.class);
+            allSpritesResources.addAll(vdpSpriteResources);
+            allSpritesResources.addAll(collisionResources);
+            allSpritesResources.addAll(getResources(SpriteFrame.class));
+            allSpritesResources.addAll(getResources(SpriteAnimation.class));
+
+            // compute SPRITE structures size
+            for (Resource res : allSpritesResources)
+                spriteMetaSize += res.shallowSize();
+
+            if (spriteMetaSize > 0)
+                System.out.println("Sprite metadata (all but tiles and palette data): " + spriteMetaSize + " bytes");
+
             int miscMetaSize = 0;
 
-            // has sprites ?
-            if (!getResources(Sprite.class).isEmpty())
-            {
-                // compute SPRITE structures size
-                for (Resource res : getResources(VDPSprite.class))
-                    spriteMetaSize += res.shallowSize();
-                for (Resource res : getResources(Collision.class))
-                    spriteMetaSize += res.shallowSize();
-                for (Resource res : getResources(SpriteFrame.class))
-                    spriteMetaSize += res.shallowSize();
-                for (Resource res : getResources(SpriteAnimation.class))
-                    spriteMetaSize += res.shallowSize();
-                for (Resource res : getResources(Sprite.class))
-                    spriteMetaSize += res.shallowSize();
-
-                System.out.println("Sprite metadata (all but tiles and palette data): " + spriteMetaSize + " bytes");
-            }
+            // keep all others non BIN resources (non sprite related)
+            nonBinResources.removeAll(allSpritesResources);
 
             // compute misc structures size
-            for (Resource res : getResources(Bitmap.class))
-                miscMetaSize += res.shallowSize();
-            for (Resource res : getResources(Image.class))
-                miscMetaSize += res.shallowSize();
-            for (Resource res : getResources(Tilemap.class))
-                miscMetaSize += res.shallowSize();
-            for (Resource res : getResources(Tileset.class))
-                miscMetaSize += res.shallowSize();
-            for (Resource res : getResources(Palette.class))
+            for (Resource res : nonBinResources)
                 miscMetaSize += res.shallowSize();
 
             if (miscMetaSize > 0)
-                System.out.println(
-                        "Misc metadata (bitmap, image, tilemap, tileset, palette..): " + miscMetaSize + " bytes");
+                System.out.println("Misc metadata (map, bitmap, image, tilemap, tileset, palette..): " + miscMetaSize + " bytes");
 
             final int totalSize = unpackedSize + packedSize + spriteMetaSize + miscMetaSize;
             System.out.println("Total: " + totalSize + " bytes (" + Math.round(totalSize / 1024d) + " KB)");
@@ -469,6 +411,137 @@ public class Compiler
         return true;
     }
 
+    private static void loadExtensions() throws IOException
+    {
+        final File rescompExt = StringUtil.isEmpty(resDir) ? new File(EXT_JAR_NAME) : new File(resDir, EXT_JAR_NAME);
+
+        // found an extension ?
+        if (rescompExt.exists())
+        {
+            // build the class loader
+            final URLClassLoader classLoader = new URLClassLoader(new URL[] {rescompExt.toURI().toURL()}, Compiler.class.getClassLoader());
+
+            try
+            {
+                // get all classes from JAR file
+                for (String className : findClassNamesInJAR(rescompExt.getAbsolutePath()))
+                {
+                    try
+                    {
+                        // try to load class
+                        final Class<?> clazz = classLoader.loadClass(className);
+
+                        try
+                        {
+                            // is a processor class ?
+                            final Class<? extends Processor> processorClass = clazz.asSubclass(Processor.class);
+                            // create the processor
+                            final Processor processor = processorClass.newInstance();
+
+                            // and add to processor list
+                            resourceProcessors.add(processor);
+
+                            System.out.println("Extension '" + processor.getId() + "' loaded.");
+                        }
+                        catch (Throwable t)
+                        {
+                            // not a processor --> ignore
+                        }
+                    }
+                    catch (UnsupportedClassVersionError e)
+                    {
+                        System.err.println("Class '" + className + "' cannot be loaded: newer java required.");
+                    }
+                    catch (Throwable t)
+                    {
+                        System.err.println("Class '" + className + "' cannot be loaded:" + t.getMessage());
+                    }
+                }
+            }
+            finally
+            {
+                classLoader.close();
+            }
+        }
+    }
+
+    /**
+     * This method checks and transforms the filename of a potential {@link Class} given by <code>fileName</code>.<br>
+     * 
+     * @param fileName
+     *        is the filename.
+     * @return the according Java {@link Class#getName() class-name} for the given <code>fileName</code> if it is a
+     *         class-file that is no anonymous {@link Class}, else <code>null</code>.
+     */
+    private static String fixClassName(String fileName)
+    {
+        // replace path separator by package separator
+        String result = fileName.replace('/', '.');
+
+        // handle inner classes...
+        final int lastDollar = result.lastIndexOf('$');
+        if (lastDollar > 0)
+        {
+            char innerChar = result.charAt(lastDollar + 1);
+            // ignore anonymous inner class
+            if ((innerChar >= '0') && (innerChar <= '9'))
+                return null;
+        }
+
+        return result;
+    }
+
+    /**
+     * This method checks and transforms the filename of a potential {@link Class} given by <code>fileName</code>.
+     * 
+     * @param fileName
+     *        is the filename.
+     * @return the according Java {@link Class#getName() class-name} for the given <code>fileName</code> if it is a
+     *         class-file that is no anonymous {@link Class}, else <code>null</code>.
+     */
+    private static String filenameToClassname(String fileName)
+    {
+        // class file ?
+        if (fileName.toLowerCase().endsWith(".class"))
+            // remove ".class" extension and fix classname
+            return fixClassName(fileName.substring(0, fileName.length() - 6));
+
+        return null;
+    }
+
+    private static void addClassFileName(String fileName, Set<String> classSet, String prefix)
+    {
+        final String simpleClassName = filenameToClassname(fileName);
+
+        if (simpleClassName != null)
+            classSet.add(prefix + simpleClassName);
+    }
+
+    /**
+     * Search for all classes in JAR file
+     * 
+     * @throws IOException
+     */
+    private static Set<String> findClassNamesInJAR(String fileName) throws IOException
+    {
+        final Set<String> classes = new HashSet<>();
+
+        try (final JarFile jarFile = new JarFile(fileName))
+        {
+            final Enumeration<JarEntry> entries = jarFile.entries();
+
+            while (entries.hasMoreElements())
+            {
+                final JarEntry jarEntry = entries.nextElement();
+
+                if (!jarEntry.isDirectory())
+                    addClassFileName(jarEntry.getName(), classes, "");
+            }
+        }
+
+        return classes;
+    }
+
     private static String getFixedPath(String path)
     {
         return FileUtil.getGenericPath(path).replace(" ", "\\ ");
@@ -493,111 +566,118 @@ public class Compiler
         return getFixedPath(targetFileName) + ": " + result;
     }
 
-    private static List<Resource> getFarBinResourcesOf(List<Resource> resourceList)
-    {
-        final List<Resource> result = new ArrayList<>();
-
-        for (Resource resource : resourceList)
-            if (resource instanceof Bin)
-                if (((Bin) resource).far)
-                    result.add(resource);
-
-        return result;
-    }
-
-    private static List<Resource> getBinResourcesOf(Class<? extends Resource> resourceType)
-    {
-        final List<Resource> result = new ArrayList<>();
-        final List<Resource> typeResources = getResources(resourceType);
-
-        if (resourceType.equals(Palette.class))
-        {
-            for (Resource resource : typeResources)
-            {
-                final Bin binResource = ((Palette) resource).bin;
-
-                if (!result.contains(binResource))
-                    result.add(binResource);
-            }
-        }
-        else if (resourceType.equals(Bitmap.class))
-        {
-            for (Resource resource : typeResources)
-            {
-                final Bin binResource = ((Bitmap) resource).bin;
-
-                if (!result.contains(binResource))
-                    result.add(binResource);
-            }
-        }
-        else if (resourceType.equals(Tileset.class))
-        {
-            for (Resource resource : typeResources)
-            {
-                final Bin binResource = ((Tileset) resource).bin;
-
-                if (!result.contains(binResource))
-                    result.add(binResource);
-            }
-        }
-        else if (resourceType.equals(Tilemap.class))
-        {
-            for (Resource resource : typeResources)
-            {
-                final Bin binResource = ((Tilemap) resource).bin;
-
-                if (!result.contains(binResource))
-                    result.add(binResource);
-            }
-        }
-        else if (resourceType.equals(sgdk.rescomp.resource.Map.class))
-        {
-            for (Resource resource : typeResources)
-            {
-                final Bin binResourceMT = ((sgdk.rescomp.resource.Map) resource).metatilesBin;
-                final Bin binResourceMB = ((sgdk.rescomp.resource.Map) resource).mapBlocksBin;
-                final Bin binResourceMBI = ((sgdk.rescomp.resource.Map) resource).mapBlockIndexesBin;
-                final Bin binResourceMBRO = ((sgdk.rescomp.resource.Map) resource).mapBlockRowOffsetsBin;
-
-                if (!result.contains(binResourceMT))
-                    result.add(binResourceMT);
-                if (!result.contains(binResourceMB))
-                    result.add(binResourceMB);
-                if (!result.contains(binResourceMBI))
-                    result.add(binResourceMBI);
-                if (!result.contains(binResourceMBRO))
-                    result.add(binResourceMBRO);
-            }
-        }
-        else
-            throw new IllegalArgumentException(
-                    "getBinResourcesOf(..) error: " + resourceType.getName() + " class type not expected !");
-
-        return result;
-    }
-
     public static List<Resource> getResources(Class<? extends Resource> resourceType)
     {
         final List<Resource> result = new ArrayList<>();
 
         for (Resource resource : resourcesList)
-            if (resourceType.isInstance(resource))
+            if ((resourceType == null) || resourceType.isInstance(resource))
                 result.add(resource);
 
         return result;
     }
 
-    private static void exportResources(Collection<Resource> resourceCollection, ByteArrayOutputStream outB,
-            StringBuilder outS, StringBuilder outH) throws IOException
+    private static List<Resource> getNonBinResources()
+    {
+        final List<Resource> result = new ArrayList<>();
+
+        for (Resource resource : resourcesList)
+            if (!Bin.class.isInstance(resource))
+                result.add(resource);
+
+        return result;
+    }
+
+    private static List<Bin> getBinResources(boolean far)
+    {
+        final List<Bin> result = new ArrayList<>();
+
+        for (Resource resource : resourcesList)
+        {
+            if (Bin.class.isInstance(resource) && (((Bin) resource).far == far))
+                result.add((Bin) resource);
+        }
+
+        return result;
+    }
+
+    private static List<Bin> getInternalBinResourcesOf(List<Bin> dest, Class<? extends Resource> from, boolean far)
+    {
+        final List<Bin> result;
+
+        if (dest != null)
+            result = dest;
+        else
+            result = new ArrayList<>();
+
+        // special case of Map resource which has several binary blob that we want to group :)
+        if (from == sgdk.rescomp.resource.Map.class)
+        {
+            final List<Resource> mapResources = getResources(from);
+
+            // metatiles bin
+            for (Resource resource : mapResources)
+            {
+                final sgdk.rescomp.resource.Map map = (sgdk.rescomp.resource.Map) resource;
+
+                if ((map.metatilesBin.far == far) && !result.contains(map.metatilesBin))
+                    result.add(map.metatilesBin);
+            }
+            // mapBlockIndexes bin
+            for (Resource resource : mapResources)
+            {
+                final sgdk.rescomp.resource.Map map = (sgdk.rescomp.resource.Map) resource;
+
+                if ((map.mapBlockIndexesBin.far == far) && !result.contains(map.mapBlockIndexesBin))
+                    result.add(map.mapBlockIndexesBin);
+            }
+            // mapBlockRowOffsets bin
+            for (Resource resource : mapResources)
+            {
+                final sgdk.rescomp.resource.Map map = (sgdk.rescomp.resource.Map) resource;
+
+                if ((map.mapBlockRowOffsetsBin.far == far) && !result.contains(map.mapBlockRowOffsetsBin))
+                    result.add(map.mapBlockRowOffsetsBin);
+            }
+            // mapBlocks bin
+            for (Resource resource : mapResources)
+            {
+                final sgdk.rescomp.resource.Map map = (sgdk.rescomp.resource.Map) resource;
+
+                if ((map.mapBlocksBin.far == far) && !result.contains(map.mapBlocksBin))
+                    result.add(map.mapBlocksBin);
+            }
+        }
+        else
+        {
+            for (Resource resource : getResources(from))
+            {
+                for (Bin bin : resource.getInternalBinResources())
+                {
+                    if ((bin.far == far) && !result.contains(bin))
+                        result.add(bin);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static void exportResources(Collection<? extends Resource> resourceCollection, ByteArrayOutputStream outB, StringBuilder outS, StringBuilder outH)
+            throws IOException
     {
         for (Resource res : resourceCollection)
             exportResource(res, outB, outS, outH);
     }
 
-    private static void exportResource(Resource resource, ByteArrayOutputStream outB, StringBuilder outS,
-            StringBuilder outH) throws IOException
+    private static void exportResource(Resource resource, ByteArrayOutputStream outB, StringBuilder outS, StringBuilder outH) throws IOException
     {
         resource.out(outB, outS, outH);
+    }
+
+    public static Resource findResource(Resource resource)
+    {
+        return resources.get(resource);
     }
 
     public static Resource addResource(Resource resource, boolean internal)
@@ -605,11 +685,8 @@ public class Compiler
         // internal resource ?
         if (internal)
         {
-            // mark as not global
-            resource.global = false;
-
             // check if we already have this resource
-            final Resource result = resources.get(resource);
+            final Resource result = findResource(resource);
 
             // return it if already exists
             if (result != null)
@@ -617,6 +694,9 @@ public class Compiler
                 // System.out.println("Duplicated resource found: " + resource.id + " = " + result.id);
                 return result;
             }
+
+            // mark as not global (internal)
+            resource.global = false;
         }
 
         // add resource
@@ -638,6 +718,9 @@ public class Compiler
 
     public static Resource getResourceById(String id)
     {
+        if (StringUtil.equals(id, "NULL"))
+            return null;
+
         for (Resource resource : resourcesList)
             if (resource.id.equals(id))
                 return resource;
@@ -679,17 +762,9 @@ public class Compiler
 
             return processor.execute(fields);
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            System.out.println();
-            System.err.println(e.getMessage());
-            System.err.println("Error: cannot compile resource '" + input + "'");
-            e.printStackTrace();
-            return null;
-        }
-        catch (IllegalArgumentException e)
-        {
-            System.out.println();
+            System.err.println();
             System.err.println(e.getMessage());
             System.err.println("Error: cannot compile resource '" + input + "'");
             e.printStackTrace();
@@ -703,6 +778,26 @@ public class Compiler
             if (resourceType.equalsIgnoreCase(rp.getId()))
                 return rp;
 
+        // not found ? --> try to load extensions
+        if (!extensionsLoaded)
+        {
+            extensionsLoaded = true;
+
+            try
+            {
+                loadExtensions();
+            }
+            catch (IOException e)
+            {
+                System.err.println("Cannot load extension:" + e.getMessage());
+            }
+
+            // and try again
+            for (Processor rp : resourceProcessors)
+                if (resourceType.equalsIgnoreCase(rp.getId()))
+                    return rp;
+        }
+        
         return null;
     }
 }

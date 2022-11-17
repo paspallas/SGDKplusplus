@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import sgdk.rescomp.Resource;
+import sgdk.rescomp.resource.Bin;
 import sgdk.rescomp.resource.Tileset;
 import sgdk.rescomp.tool.SpriteCutter;
 import sgdk.rescomp.tool.Util;
@@ -35,6 +36,7 @@ public class SpriteFrame extends Resource
     final byte[] frameImage;
     final Dimension frameDim;
     final CollisionType collisionType;
+    final Compression compression;
     final int fhc;
 
     /**
@@ -55,9 +57,10 @@ public class SpriteFrame extends Resource
         vdpSprites = new ArrayList<>();
         this.timer = timer;
         this.collisionType = collisionType;
+        this.compression = compression;
         this.frameImage = frameImage8bpp;
         this.frameDim = new Dimension(wf * 8, hf * 8);
-        this.fhc = computeFastHashcode(frameImage8bpp, frameDim, timer, collisionType);
+        this.fhc = computeFastHashcode(frameImage8bpp, frameDim, timer, collisionType, compression);
 
         // get optimized sprite list from the image frame
         List<SpriteCell> sprites;
@@ -112,7 +115,7 @@ public class SpriteFrame extends Resource
 
         // build tileset
         tileset = (Tileset) addInternalResource(
-                new Tileset(id + "_tileset", frameImage, wf * 8, hf * 8, sprites, compression));
+                new Tileset(id + "_tileset", frameImage, wf * 8, hf * 8, sprites, compression, false));
 
         final Collision coll;
 
@@ -173,10 +176,10 @@ public class SpriteFrame extends Resource
                 collisionType, compression, opt, optIteration);
     }
 
-    static int computeFastHashcode(byte[] frameImage8bpp, Dimension frameDim, int timer, CollisionType collision)
+    static int computeFastHashcode(byte[] frameImage8bpp, Dimension frameDim, int timer, CollisionType collision, Compression compression)
     {
         return (timer << 16) ^ ((collision != null) ? collision.hashCode() : 0) ^ Arrays.hashCode(frameImage8bpp)
-                ^ frameDim.hashCode();
+                ^ frameDim.hashCode() ^ compression.hashCode();
     }
 
     public int getNumSprite()
@@ -212,6 +215,12 @@ public class SpriteFrame extends Resource
         }
 
         return false;
+    }
+
+    @Override
+    public List<Bin> getInternalBinResources()
+    {
+        return new ArrayList<>();
     }
 
     @Override
@@ -253,16 +262,10 @@ public class SpriteFrame extends Resource
         else
             outS.append("    dc.l    " + collision.id + "\n");
 
-        // array of VDPSrpite - respect VDP sprite field order: (numTile, offsetY, size, offsetX)
+        // array of VDPSprite
         for (VDPSprite sprite : vdpSprites)
-        {
-            outS.append("    dc.w    " + (((sprite.ht * sprite.wt) << 8) | ((sprite.offsetY << 0) & 0xFF)) + "\n");
-            outS.append(
-                    "    dc.w    " + ((sprite.offsetYFlip << 8) | ((sprite.getFormattedSize() << 0) & 0xFF)) + "\n");
-            outS.append("    dc.w    " + ((sprite.offsetX << 8) | ((sprite.offsetXFlip << 0) & 0xFF)) + "\n");
-        }
+            sprite.internalOutS(outS);
 
         outS.append("\n");
     }
-
 }

@@ -41,7 +41,6 @@ DEFAULT_FLAGS_LIB := $(EXTRA_FLAGS) 				\
 
 FLAGSZ80_LIB := -i$(SRC_LIB) -i$(INCLUDE_LIB)
 
-
 release: FLAGS_LIB= $(DEFAULT_FLAGS_LIB)\
 				-fuse-linker-plugin 			\
 				-flto 							\
@@ -56,7 +55,9 @@ release: FLAGS_LIB= $(DEFAULT_FLAGS_LIB)\
 
 release: $(INCLUDE_LIB)/genesis.h.gch $(LIB)/libmd.a $(LIB)/libsys.a $(LIB)/libcpp.a
 
-debug: FLAGS_LIB= $(DEFAULT_FLAGS_LIB) -O1 -ggdb -DDEBUG=1
+debug: FLAGS_LIB= $(DEFAULT_FLAGS_LIB) -O1 -DDEBUG=1
+debug: CFLAGS_LIB= $(FLAGS_LIB) -ggdb
+debug: AFLAGS_LIB= $(FLAGS_LIB)
 debug: $(LIB)/libmd_debug.a
 
 asm: FLAGS_LIB= $(DEFAULT_FLAGS_LIB) 	\
@@ -69,7 +70,6 @@ asm: FLAGS_LIB= $(DEFAULT_FLAGS_LIB) 	\
 				-fomit-frame-pointer   	\
 				-S
 asm: $(LST_LIB)
-
 
 all: release
 default: release
@@ -140,11 +140,11 @@ $(LIB)/libcpp.a: $(SRC_LIB)/ext/cplusplus/supportcxx.o
 
 %.o: %.s
 	@$(ECHO) " AS $(notdir $<)"
-	@$(CC) -x assembler-with-cpp -MMD $(FLAGS_LIB) -c $< -o $@
+	@$(CC) -x assembler-with-cpp -Wa,--register-prefix-optional,--bitwise-or -MMD $(FLAGS_LIB) -c $< -o $@
 
 %.o: %.rs
 	@$(ECHO) " RS $(notdir $<)"
-	@$(CC) -x assembler-with-cpp $(FLAGS_LIB) -c $*.rs -o $@
+	@$(CC) -x assembler-with-cpp -Wa,--register-prefix-optional,--bitwise-or $(FLAGS_LIB) -c $*.rs -o $@
 
 %.rs: %.res
 	@$(RESCOMP) $*.res $*.rs -dep $*.o

@@ -8,20 +8,17 @@
  * It works in concert with the <i>pool.h</i> unit which provide dynamic object allocation.<br>
  * <br>
  * The idea of <i>Object</i> is that you can use it as base structure for your own object (entity, enemy, character, whatever you want..).<br>
- * To do that the idea is to declare your new object structure by embedding the Object into it and always at the first position:<pre>
+ * To do that the idea is to declare your new object structure by embedding the Object into it can be anonymous) and always at the first position:<pre>
  * struct entity_
  * {
- *     Object obj;
+ *     Object;
  *     f32 posX;
  *     f32 posY;
  *     Sprite* sprite;
  *     ...
  * };</pre>
  *
- * Doing that your Entity structure can be used through OBJ_xxx methods for will be acceptedYou can use <i>Pool</i> object to handle dynamic allocation from a fixed set of objects.<br>
- * For instance if you may need to handle dynamically bullets for your game and you want to have
- * at max 20 bullets, you can handle it that way:<br><pre>
-
+ * Doing that your Entity structure can be used through OBJ_xxx methods.
  */
 
 #ifndef _OBJECT_H_
@@ -53,8 +50,8 @@ typedef void ObjectCallback(Object* obj);
  *  \brief
  *      Base object structure
  *
- *  \param state
- *      Object state, you can use it but preserv bit 15 as it's used internally to detect invalid object
+ *  \param internalState
+ *      Object internal state, you can use it but you should save bit 15 as it's used internally to detect invalid object
  *  \param type
  *      Object type, can be used to recognize the underlying object / structure type.
  *  \param init
@@ -66,7 +63,7 @@ typedef void ObjectCallback(Object* obj);
  */
 typedef struct Object_
 {
-    u16 state;
+    u16 internalState;
     u16 type;
     ObjectCallback* init;
     ObjectCallback* update;
@@ -91,7 +88,7 @@ Pool* OBJ_createObjectPool(u16 size, u16 objectSize);
 
 /**
  *  \brief
- *      Create a new objet from the given object pool
+ *      Create a new objet from the given object pool (object must extend basic #Object structure)
  *
  *  \param pool
  *      Object pool to allocate from (see pool.h unit)
@@ -104,23 +101,29 @@ Pool* OBJ_createObjectPool(u16 size, u16 objectSize);
 Object* OBJ_create(Pool* pool);
 /**
  *  \brief
- *      Release an objet from the given object pool
+ *      Release an objet from the given object pool (object must extend basic #Object structure)
  *
  *  \param pool
  *      Object pool allocator to release from (see pool.h unit)
- *  \param obj
- *      Object to release
+ *  \param object
+ *      Object to release (must extend basic #Object structure)
+ *  \param maintainCoherency
+ *      set it to <i>TRUE</i> if you want to keep coherency for stack iteration and use #OBJ_updateAll().<br>
+ *      Set it to <i>FALSE</i> for faster release process if you don't require object iteration through alloc stack.
  *
  *  \see OBJ_create(..)
+ *  \see OBJ_updateAll(..)
  */
-void OBJ_release(Pool* pool, Object* obj);
+void OBJ_release(Pool* pool, Object* object, bool maintainCoherency);
 
 /**
  *  \brief
- *      Iterate over all active object from the given object pool and call #update() method for each of them
+ *      Iterate over all active objects from the given object pool and call <i>update</i> method for each of them.<br>
  *
  *  \param pool
- *      Object pool to iterate active object from
+ *      Object pool to update all objects from.
+ *
+ *  \warning You need to always set 'maintainCoherency' to <i>TRUE</i> when using #OBJ_release(..) otherwise stack iteration won't work correctly.
  */
 void OBJ_updateAll(Pool* pool);
 
@@ -128,7 +131,7 @@ void OBJ_updateAll(Pool* pool);
  *  \brief
  *      Set the initialization method for the given object
  *
- *  \param obj
+ *  \param object
  *      Object to set <i>init</i> method for
  *  \param initMethod
  *      the method to set for object initialization (should be called after object creation)
@@ -136,33 +139,33 @@ void OBJ_updateAll(Pool* pool);
  *  \see OBJ_setUpdateMethod(..)
  *  \see OBJ_setEndMethod(..)
  */
-void OBJ_setInitMethod(Object* obj, ObjectCallback* initMethod);
+void OBJ_setInitMethod(Object* object, ObjectCallback* initMethod);
 /**
  *  \brief
  *      Set the update method for the given object
  *
- *  \param obj
+ *  \param object
  *      Object to set <i>update</i> method for
- *  \param initMethod
+ *  \param updateMethod
  *      the method to set for object update (should be called once per frame)
  *
  *  \see OBJ_setInitMethod(..)
  *  \see OBJ_setEndMethod(..)
  */
-void OBJ_setUpdateMethod(Object* obj, ObjectCallback* updateMethod);
+void OBJ_setUpdateMethod(Object* object, ObjectCallback* updateMethod);
 /**
  *  \brief
  *      Set the ending method for the given object
  *
- *  \param obj
+ *  \param object
  *      Object to set <i>end</i> method for
- *  \param initMethod
+ *  \param endMethod
  *      the method to set for object destruction (should be called just before object is released)
  *
  *  \see OBJ_setInitMethod(..)
  *  \see OBJ_setUpdateMethod(..)
  */
-void OBJ_setEndMethod(Object* obj, ObjectCallback* endMethod);
+void OBJ_setEndMethod(Object* object, ObjectCallback* endMethod);
 
 
 #endif // _OBJECT_H_

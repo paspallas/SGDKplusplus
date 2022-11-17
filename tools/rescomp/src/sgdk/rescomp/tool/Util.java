@@ -1,8 +1,11 @@
 package sgdk.rescomp.tool;
 
+import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import sgdk.aplib.APJ;
 import sgdk.lz4w.LZ4W;
@@ -20,6 +23,15 @@ import sgdk.tool.TypeUtil;
 public class Util
 {
     final static String[] formatAsm = {"b", "b", "w", "w", "d"};
+
+    public static <T> List<T> asList(T element)
+    {
+        final List<T> result = new ArrayList<>();
+
+        result.add(element);
+
+        return result;
+    }
 
     public static short toVDPColor(byte b, byte g, byte r)
     {
@@ -107,6 +119,20 @@ public class Util
         throw new IllegalArgumentException("Unrecognized sprite optimization: '" + text + "'");
     }
 
+    public static Color getColor(String string)
+    {
+        final int value = Integer.decode("0x" + string).intValue();
+        return new Color(value, true);
+    }
+
+    public static String getAdjustedPath(String path, String baseFile)
+    {
+        if (FileUtil.isAbsolutePath(path))
+            return path;
+
+        return FileUtil.getDirectory(baseFile) + path;
+    }
+
     public static byte[] sizeAlign(byte[] data, int align, byte fill)
     {
         // compute alignment
@@ -138,8 +164,7 @@ public class Util
             outH.append("extern const " + type + " " + name + ";\n");
     }
 
-    public static void declArray(StringBuilder outS, StringBuilder outH, String type, String name, int size, int align,
-            boolean global)
+    public static void declArray(StringBuilder outS, StringBuilder outH, String type, String name, int size, int align, boolean global)
     {
         // asm declaration
         outS.append("    .align  " + ((align < 2) ? 2 : align) + "\n");
@@ -152,48 +177,78 @@ public class Util
             outH.append("extern const " + type + " " + name + "[" + size + "];\n");
     }
 
+    // public static void outS(StringBuilder out, byte[] data, int intSize)
+    // {
+    // int offset = 0;
+    // // align remain on word
+    // int remain = ((data.length + 1) / 2) * 2;
+    // int adjIntSize = (intSize < 2) ? 2 : intSize;
+    //
+    // while (remain > 0)
+    // {
+    // out.append(" dc." + formatAsm[adjIntSize] + " ");
+    //
+    // for (int i = 0; i < Math.min(16, remain) / adjIntSize; i++)
+    // {
+    // if (i > 0)
+    // out.append(", ");
+    //
+    // out.append("0x");
+    //
+    // if (intSize == 1)
+    // {
+    // // we cannot use byte data because of GCC bugs with -G parameter
+    // out.append(StringUtil.toHexaString(TypeUtil.unsign(data[offset + 0]), 2));
+    //
+    // if ((offset + 1) >= data.length)
+    // out.append("00");
+    // else
+    // out.append(StringUtil.toHexaString(TypeUtil.unsign(data[offset + 1]), 2));
+    //
+    // offset += adjIntSize;
+    // }
+    // else
+    // {
+    // offset += adjIntSize;
+    //
+    // for (int j = 0; j < adjIntSize; j++)
+    // out.append(StringUtil.toHexaString(TypeUtil.unsign(data[offset - (j + 1)]), 2));
+    // }
+    // }
+    //
+    // out.append("\n");
+    // remain -= 16;
+    // }
+    // }
+
     public static void outS(StringBuilder out, byte[] data, int intSize)
     {
         int offset = 0;
-        // align remain on word
-        int remain = ((data.length + 1) / 2) * 2;
-        int adjIntSize = (intSize < 2) ? 2 : intSize;
+        int remain = data.length;
 
         while (remain > 0)
         {
-            out.append("    dc." + formatAsm[adjIntSize] + "    ");
+            out.append("    dc." + formatAsm[intSize] + "    ");
 
-            for (int i = 0; i < Math.min(16, remain) / adjIntSize; i++)
+            for (int i = 0; i < Math.min(16, remain) / intSize; i++)
             {
                 if (i > 0)
                     out.append(", ");
 
                 out.append("0x");
 
-                if (intSize == 1)
-                {
-                    // we cannot use byte data because of GCC bugs with -G parameter
-                    out.append(StringUtil.toHexaString(TypeUtil.unsign(data[offset + 0]), 2));
-
-                    if ((offset + 1) >= data.length)
-                        out.append("00");
-                    else
-                        out.append(StringUtil.toHexaString(TypeUtil.unsign(data[offset + 1]), 2));
-
-                    offset += adjIntSize;
-                }
-                else
-                {
-                    offset += adjIntSize;
-
-                    for (int j = 0; j < adjIntSize; j++)
-                        out.append(StringUtil.toHexaString(TypeUtil.unsign(data[offset - (j + 1)]), 2));
-                }
+                offset += intSize;
+                for (int j = 0; j < intSize; j++)
+                    out.append(StringUtil.toHexaString(TypeUtil.unsign(data[offset - (j + 1)]), 2));
             }
 
             out.append("\n");
             remain -= 16;
         }
+
+        // better to pad data to word
+        if ((intSize == 1) && ((data.length & 1) != 0))
+            out.append("    dc.b    0x00\n");
     }
 
     public static byte[] in(String fin)
@@ -339,8 +394,19 @@ public class Util
         outB(out, data, 0);
     }
 
-    public static PackedData pack(byte[] data, Compression compression, ByteArrayOutputStream bin,
-            boolean forceSelectedCompression)
+    public static boolean isCompressionValuable(Compression compressionMethod, int compressedSize, int uncompressedSize)
+    {
+        final int minDiff = (compressionMethod == Compression.APLIB) ? 120 : 60;
+
+        if ((uncompressedSize - compressedSize) <= minDiff)
+            return false;
+
+        final double maxPourcentage = (compressionMethod == Compression.APLIB) ? 85 : 95;
+
+        return Math.round((compressedSize * 100f) / uncompressedSize) <= maxPourcentage;
+    }
+
+    public static PackedData pack(byte[] data, Compression compression, ByteArrayOutputStream bin, boolean forceSelectedCompression)
     {
         // nothing to do
         if (compression == Compression.NONE)
@@ -358,13 +424,12 @@ public class Util
             if (forceSelectedCompression)
             {
                 if (result == null)
-                    throw new RuntimeException(
-                            "Cannot use desired compression on resource ! Try removing compression.");
+                    throw new RuntimeException("Cannot use wanted compression on resource, try removing compression.");
             }
             else
             {
-                // error or no compression possible ? return origin data
-                if ((result == null) || (result.length >= data.length))
+                // error or no good compression ? return origin data
+                if ((result == null) || !isCompressionValuable(Compression.LZ4W, result.length, data.length))
                     return new PackedData(data, Compression.NONE);
             }
 
@@ -422,8 +487,7 @@ public class Util
                 if (forceSelectedCompression)
                 {
                     if (out == null)
-                        throw new RuntimeException(
-                                "Cannot use desired compression on resource ! Try removing compression.");
+                        throw new RuntimeException("Cannot use desired compression on resource ! Try removing compression.");
 
                     // directly return result
                     return new PackedData(out, comp);
@@ -453,7 +517,7 @@ public class Util
 
             if (results[compIndex] != null)
             {
-                if (sizes[compIndex] < minSize)
+                if (isCompressionValuable(comp, sizes[compIndex], sizes[0]) && (sizes[compIndex] < minSize))
                 {
                     minSize = sizes[compIndex];
                     result = results[compIndex];
@@ -489,8 +553,7 @@ public class Util
         FileUtil.delete(fout, false);
 
         // build complete command line
-        final String[] cmd = new String[] {"java", "-jar",
-                FileUtil.adjustPath(sgdk.rescomp.Compiler.currentDir, "apj.jar"), "p", fin, fout, "-s"};
+        final String[] cmd = new String[] {"java", "-jar", FileUtil.adjustPath(sgdk.rescomp.Compiler.currentDir, "apj.jar"), "p", fin, fout, "-s"};
 
         String cmdLine = "";
         for (String s : cmd)
@@ -548,8 +611,7 @@ public class Util
         FileUtil.delete(fout, false);
 
         // build complete command line
-        final String[] cmd = new String[] {"java", "-jar",
-                FileUtil.adjustPath(sgdk.rescomp.Compiler.currentDir, "lz4w.jar"), "p",
+        final String[] cmd = new String[] {"java", "-jar", FileUtil.adjustPath(sgdk.rescomp.Compiler.currentDir, "lz4w.jar"), "p",
                 (!StringUtil.isEmpty(prev) ? prev + "@" : "") + fin, fout, "-s"};
         // final String[] cmd = new String[] {"java", "-jar",
         // FileUtil.adjustPath(sgdk.rescomp.Compiler.currentDir, "lz4w.jar"), "p", fin, fout, "-s"};
@@ -582,8 +644,8 @@ public class Util
         FileUtil.delete(fout, false);
 
         // build complete command line
-        final String[] cmd = new String[] {FileUtil.adjustPath(sgdk.rescomp.Compiler.currentDir, "xgmtool"), fin, fout,
-                "-s", (timing == 0) ? "-n" : ((timing == 1) ? "-p" : ""), (options != null) ? options : ""};
+        final String[] cmd = new String[] {FileUtil.adjustPath(sgdk.rescomp.Compiler.currentDir, "xgmtool"), fin, fout, "-s",
+                (timing == 0) ? "-n" : ((timing == 1) ? "-p" : ""), (options != null) ? options : ""};
 
         String cmdLine = "";
         for (String s : cmd)
@@ -591,7 +653,7 @@ public class Util
         // just to remove the warning with unrecognized parameter
         while (cmdLine.endsWith(" "))
             cmdLine = StringUtil.removeLast(cmdLine, 1);
-        
+
         System.out.println("Executing " + cmdLine);
 
         // execute

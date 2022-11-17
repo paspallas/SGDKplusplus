@@ -40,7 +40,7 @@
  *  \brief
  *      Define library log level (for debug build)
  */
-#define LIB_LOG_LEVEL       LOG_LEVEL_WARNING
+#define LIB_LOG_LEVEL       LOG_LEVEL_ERROR
 
 /**
  *  \brief
@@ -92,7 +92,7 @@
  *      Set it to 1 if you want to use newlib with SGDK.<br>
  *      That will disable any standard methods from SGDK to replace them by newlib library implementation.
  */
-#define ENABLE_NEWLIB       0
+#define ENABLE_NEWLIB       1
 
 /**
  *  \brief
@@ -100,7 +100,7 @@
  *
  *      ENABLE_NEWLIB must be set to 1 so libstdc++ can be linked against libc.
  */
-#define ENABLE_CPLUSPLUS    0
+#define ENABLE_CPLUSPLUS    1
 
 /**
  *  \brief
@@ -120,13 +120,13 @@
 
 /**
  *  \brief
- *      Set it to 1 if you want to use EVERDRIVE programming methods (provided by Krikzz).<br>
+ *      Set it to 1 if you want to use EVERDRIVE programming methods (written by Krikzz).
  */
 #define MODULE_EVERDRIVE    0
 
 /**
  *  \brief
- *      Set it to 1 if you want to use FAT16 methods for Everdrive cart (provided by Krikzz).<br>
+ *      Set it to 1 if you want to use FAT16 methods for Everdrive cart (written by Krikzz).<br>
  *      This cost a bit more than 1 KB of RAM.
  */
 #define MODULE_FAT16        0
@@ -138,8 +138,36 @@
 
 /**
  *  \brief
- *      Set it to 1 if you want to enable MegaWiFi functions and support code
- */
+ *      Set it to 1 if you want to enable MegaWiFi functions and support code (written by Jesus Alonso - doragasu) */
 #define MODULE_MEGAWIFI     0
+
+/**
+ *  \brief
+ *      Set it to 1 if you want to enable Flash Save functions (written by Jesus Alonso - doragasu).<br>
+ *      There is no reason to disable it as it doesn't consume extra memory
+  */
+#define MODULE_FLASHSAVE    1
+
+/**
+ *  \brief
+ *      Set it to 1 if you want to enable the TTY text console module (written by Andreas Dietrich).<br>
+ *      It consume about 34 bytes of memory when enabled.
+  */
+#define MODULE_CONSOLE      0
+
+/**
+ *  \brief
+ *      Set it to 1 if you want to use the Fractal sound driver from Aurora Fields.<br>
+ *      Note that you need to install the module first before enable it (https://gitlab.com/Natsumi/Fractal-Sound)
+ */
+#define MODULE_FRACTAL      0
+
+
+/**
+ *  \brief
+ *      To force method inlining (not sure that GCC does actually care of it)
+ */
+#define FORCE_INLINE        inline __attribute__((always_inline))
+
 
 #endif // _CONFIG_

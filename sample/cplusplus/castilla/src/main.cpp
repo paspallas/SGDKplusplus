@@ -18,7 +18,7 @@ int main(bool hardReset)
     VDP_setEnable(false);
     VDP_setScreenWidth320();
     VDP_setScreenHeight224();
-    VDP_setPaletteColors(PAL0, palette_black, 64);
+    PAL_setPalette(PAL0, palette_black, CPU);
     VDP_setTextPalette(PAL3);
     VDP_setEnable(true);
 
@@ -26,7 +26,7 @@ int main(bool hardReset)
 
     u16 palette[64];
     std::memcpy(&palette[32], spr_ramiro.palette->data, 16 * 2);
-    VDP_fadeIn(0, 64, palette, 20, false);
+    PAL_fadeIn(0, 64, palette, 20, false);
 
     SPR_init();
 

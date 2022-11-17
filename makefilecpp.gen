@@ -2,10 +2,10 @@ MAKEFILE_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 MAKEFILE_DIR := $(subst \,/,$(MAKEFILE_DIR))
 
 ifneq ("$(wildcard $(MAKEFILE_DIR)bin/rescomp.jar)","")
-    GDK := $(patsubst %/,%,$(MAKEFILE_DIR))
+    GDKPLUS := $(patsubst %/,%,$(MAKEFILE_DIR))
 endif
 
-include $(GDK)/common.mk
+include $(GDKPLUS)/common.mk
 
 SRC := src
 RES := res
@@ -162,7 +162,8 @@ out/rom.out: out/sega.o $(OBJS)
 	-o $@ -Wl,--gc-sections -Wl,-Map,out/rom.map -Wl,--check-sections
 
 out/sega.o: $(SRC)/boot/sega.s out/rom_head.bin
-	@$(CC) -x assembler-with-cpp $(DEFAULT_FLAGS) -c $(SRC)/boot/sega.s -o $@
+	@$(CC) -x assembler-with-cpp -Wa,--register-prefix-optional,--bitwise-or \
+     $(DEFAULT_FLAGS) -c $(SRC)/boot/sega.s -o $@
 
 out/rom_head.bin: out/rom_head.o
 	@$(OBJCPY) -O binary $< $@
@@ -194,11 +195,11 @@ out/%.o: %.c
 out/%.o: %.s
 	@$(ECHO) " AS $(notdir $<)"
 	@$(MKDIR) -p $(dir $@)
-	@$(CC) -x assembler-with-cpp $(FLAGS) -MMD -c $< -o $@
+	@$(CC) -x assembler-with-cpp -Wa,--register-prefix-optional,--bitwise-or $(FLAGS) -MMD -c $< -o $@
 
 out/%.o: %.rs
 	@$(MKDIR) -p $(dir $@)
-	@$(CC) -x assembler-with-cpp $(FLAGS) -c $*.rs -o $@
+	@$(CC) -x assembler-with-cpp -Wa,--register-prefix-optional,--bitwise-or $(FLAGS) -c $*.rs -o $@
 	@$(CP) $*.d out/$*.d
 	@$(RM) $*.d
 

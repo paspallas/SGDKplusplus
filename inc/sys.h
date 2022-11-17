@@ -22,7 +22,7 @@
 #define ROM_ALIGN                   (1 << ROM_ALIGN_BIT)
 #define ROM_ALIGN_MASK              (ROM_ALIGN - 1)
 
-#define ROM_START                   0
+#define ROM_START                   ROM
 #define ROM_END                     (((u32) &_stext) + ((u32) &_sdata))
 #define ROM_SIZE                    ((ROM_END + ROM_ALIGN_MASK) & (~ROM_ALIGN_MASK))
 
@@ -315,7 +315,7 @@ void SYS_setVBlankCallback(VoidCallback *CB);
 
 /**
  *  \brief
- *      Set 'Vertical Interrupt' callback method.
+ *      Set 'Vertical Interrupt' callback method, prefer #SYS_setVBlankCallback(..) when possible.
  *
  *  \param CB
  *      Pointer to the method to call on Vertical Interrupt.<br>
@@ -413,6 +413,14 @@ fix32 SYS_getFPSAsFloat(void);
  * \see VDP_waitVInt(void)
  */
 u16 SYS_getCPULoad(void);
+
+/**
+ *  \brief
+ *      Returns TRUE if frame load is currently displayed, FALSE otherwise
+
+ * \see SYS_showFrameLoad(void)
+ */
+bool SYS_getShowFrameLoad();
 /**
  *  \brief
  *      Show a cursor indicating current frame load level in scanline (top = 0% load, bottom = 100% load)

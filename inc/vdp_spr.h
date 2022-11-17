@@ -17,9 +17,9 @@
 
 /**
  *  \brief
- *      Maximum number of hardware sprite
+ *      Maximum size of Sprite Attribute Table (128 in VRAM but limited to 80 in VDP anyway)
  */
-#define MAX_VDP_SPRITE          80
+#define SAT_MAX_SIZE            80
 
 /**
  *  \brief
@@ -38,36 +38,64 @@
  *      VDP sprite definition structure replicating VDP hardware sprite.
  *
  *  \param y
- *      Y position - 0x80 (0x80 = 0 on screen)
+ *      Y position - 0x80 (0x80 = 0 on screen). Valid values: [0 - 1023]
  *  \param size
  *      sprite size (see SPRITE_SIZE macro)
+ *    \param sizeH
+ *      horizontal size. Valid values: 0 -> 8, 1 -> 16, 2 -> 24, 3 -> 32
+ *    \param sizeV
+ *      vertical size. Valid values: 0 -> 8, 1 -> 16, 2 -> 24, 3 -> 32
  *  \param link
  *      sprite link, this information is used to define sprite drawing order (use 0 to force end of list)
- *  \param attr
+ *  \param attribut
  *      tile index and sprite attribut (priority, palette, H/V flip), see TILE_ATTR_FULL macro
+ *    \param priority
+ *      sprite priority. Valid values: 0 -> low, 1 -> high
+ *    \param palette
+ *      palette index. Valid values: [0, 3]
+ *    \param flipV
+ *      vertical flip. Valid values: 0 -> normal, 1 -> flipped
+ *    \param flipH
+ *      horizontal flip. Valid values: 0 -> normal, 1 -> flipped
+ *    \param tile
+ *      tile index. Valid values: [0, 2047]
  *  \param x
- *      X position - 0x80 (0x80 = 0 on screen)
+ *      X position - 0x80 (0x80 = 0 on screen). Valid values: [0 - 1023]
  */
-typedef struct
-{
-    s16 y;
-    union
-    {
+typedef struct {
+    s16 y;  // 10 bits
+    union {
+        struct {
+            u16 unused1  : 4;
+            u16 sizeH    : 2;
+            u16 sizeV    : 2;
+            u16 unused2  : 1;
+            u16 linkData : 7;
+        };
         struct {
             u8 size;
             u8 link;
         };
         u16 size_link;
     };
-    u16 attribut;
-    s16 x;
+    union {
+        u16 attribut;
+        struct {
+            u16 priority : 1;
+            u16 palette  : 2;
+            u16 flipV    : 1;
+            u16 flipH    : 1;
+            u16 tile     : 11;
+        };
+    };
+    s16 x;  // 10 bits
 }  VDPSprite;
 
 
 /**
  *  \brief VDP sprite cache
  */
-extern VDPSprite vdpSpriteCache[MAX_VDP_SPRITE];
+extern VDPSprite vdpSpriteCache[SAT_MAX_SIZE + 16];
 
 /**
  *  \brief Pointer to last allocated sprite after calling VDP_allocateSprites(..) method.<br>
@@ -100,12 +128,14 @@ void VDP_releaseAllSprites(void);
 
 /**
  *  \brief
- *      Allocate the specified number of hardware VDP sprites and link them together.
+ *      Allocate the specified number of hardware VDP sprites and link them together.<br>
  *
  *  \param num
  *      Number of VDP sprite to allocate (need to be > 0)
  *  \return the first VDP sprite index where allocation was made.<br>
- *      -1 if there is not enough available VDP sprite remaining.
+ *      -1 if there is not enough available VDP sprite remaining.<br>
+ *      <b>WARNING:</b> VDP can display up to 80 sprites at once on screen in H40 mode only, in H32 mode
+ *      it's limited to 64 sprites even if we allow to allocate up to 80 (SAT size).
  *
  *  This method allocates the specified number of VDP sprite and returns the index of the
  *  first allocated sprite in VDP sprite table (see vdpSpriteCache).<br>
@@ -122,7 +152,7 @@ s16 VDP_allocateSprites(u16 num);
  *      Release specified number of VDP sprites.
  *
  *  \param index
- *      The index of the first VDP sprite to release (0 <= index < MAX_SPRITE)
+ *      The index of the first VDP sprite to release (0 <= index < SAT_MAX_SIZE)
  *  \param num
  *      Number of VDP sprite to release (should be > 0)
  *
@@ -135,7 +165,9 @@ s16 VDP_allocateSprites(u16 num);
 void VDP_releaseSprites(u16 index, u16 num);
 /**
  *  \brief
- *      Return the number of available VDP sprite.
+ *      Returns the number of available VDP sprite from the SAT.
+ *      <b>WARNING:</b> the SAT maximum size is 128 entries in VRAM <b>but</b> the VDP can only display up to 80 (H40 mode) or
+ *      64 sprites (H32 mode) at once on the screen.
  *
  *  \see VDP_allocateSprites(..)
  *  \see VDP_releaseSprites(..)
@@ -163,7 +195,7 @@ void VDP_clearSprites(void);
  *      Set a sprite (use sprite list cache).
  *
  *  \param index
- *      Index of the sprite to set (should be < MAX_VDP_SPRITE).
+ *      Index of the sprite to set (should be < SAT_MAX_SIZE).
  *  \param x
  *      Sprite position X on screen.
  *  \param y
@@ -185,7 +217,7 @@ void VDP_setSpriteFull(u16 index, s16 x, s16 y, u8 size, u16 attribut, u8 link);
  *      Set a sprite (use sprite list cache).
  *
  *  \param index
- *      Index of the sprite to set (should be < MAX_VDP_SPRITE).
+ *      Index of the sprite to set (should be < SAT_MAX_SIZE).
  *  \param x
  *      Sprite position X on screen.
  *  \param y
@@ -204,7 +236,7 @@ void VDP_setSprite(u16 index, s16 x, s16 y, u8 size, u16 attribut);
  *      Set sprite position (use sprite list cache).
  *
  *  \param index
- *      Index of the sprite to modify position (should be < MAX_VDP_SPRITE).
+ *      Index of the sprite to modify position (should be < SAT_MAX_SIZE).
  *  \param x
  *      Sprite position X.
  *  \param y
@@ -219,7 +251,7 @@ void VDP_setSpritePosition(u16 index, s16 x, s16 y);
  *      Set sprite size (use sprite list cache).
  *
  *  \param index
- *      Index of the sprite to modify size (should be < MAX_VDP_SPRITE).
+ *      Index of the sprite to modify size (should be < SAT_MAX_SIZE).
  *  \param size
  *      Sprite size (see SPRITE_SIZE() macro).
  *
@@ -232,7 +264,7 @@ void VDP_setSpriteSize(u16 index, u8 size);
  *      Set sprite attributes (use sprite list cache).
  *
  *  \param index
- *      Index of the sprite to modify attributes (should be < MAX_VDP_SPRITE).
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
  *  \param attribut
  *      Sprite tile attributes (see TILE_ATTR_FULL() macro).
  *
@@ -245,7 +277,7 @@ void VDP_setSpriteAttribut(u16 index, u16 attribut);
  *      Set sprite link (use sprite list cache).
  *
  *  \param index
- *      Index of the sprite to modify link (should be < MAX_VDP_SPRITE).
+ *      Index of the sprite to modify link (should be < SAT_MAX_SIZE).
  *  \param link
  *      Sprite link (index of next sprite, 0 for end).
  *
@@ -259,7 +291,7 @@ void VDP_setSpriteLink(u16 index, u8 link);
  *      Links are created in simple ascending order (1 --> 2 --> 3 --> ...)
  *
  *  \param index
- *      Index of the first sprite we want to link (should be < MAX_VDP_SPRITE).
+ *      Index of the first sprite we want to link (should be < SAT_MAX_SIZE).
  *  \param num
  *      Number of link to create (if you want to link 2 sprites you should use 1 here)
  *  \return
@@ -286,6 +318,125 @@ VDPSprite* VDP_linkSprites(u16 index, u16 num);
  *  \see VDP_refreshHighestAllocatedSpriteIndex()
  */
 void VDP_updateSprites(u16 num, TransferMethod tm);
-
+/**
+ *  \brief
+ *      Set sprite priority (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ *  \param priority
+ *      sprite priority. Valid values: 0 -> low, 1 -> high
+ *
+ *  \see VDP_setSprite(..)
+ *  \see VDP_updateSprites(..)
+ */
+void VDP_setSpritePriority(u16 index, bool priority);
+/**
+ *  \brief
+ *      Get sprite priority (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ */
+bool VDP_getSpritePriority(u16 index);
+/**
+ *  \brief
+ *      Set sprite palette (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ *  \param palette
+ *      palette index. Valid values: [0, 3]
+ *
+ *  \see VDP_setSprite(..)
+ *  \see VDP_updateSprites(..)
+ */
+void VDP_setSpritePalette(u16 index, u16 palette);
+/**
+ *  \brief
+ *      Get sprite palette (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ */
+u16 VDP_getSpritePalette(u16 index);
+/**
+ *  \brief
+ *      Set sprite horizontal and vertical flip (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ *  \param flipH
+ *      Horizontal flip. Valid values: 0 -> normal, 1 -> flipped.
+ *  \param flipV
+ *      Vertical flip. Valid values: 0 -> normal, 1 -> flipped.
+ *
+ *  \see VDP_setSprite(..)
+ *  \see VDP_updateSprites(..)
+ */
+void VDP_setSpriteFlip(u16 index, bool flipH, bool flipV);
+/**
+ *  \brief
+ *      Set sprite horizontal flip (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ *  \param flipH
+ *      Horizontal flip. Valid values: 0 -> normal, 1 -> flipped.
+ *
+ *  \see VDP_setSprite(..)
+ *  \see VDP_updateSprites(..)
+ */
+void VDP_setSpriteFlipH(u16 index, bool flipH);
+/**
+ *  \brief
+ *      Set sprite vertical flip (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ *  \param flipV
+ *      Vertical flip. Valid values: 0 -> normal, 1 -> flipped.
+ *
+ *  \see VDP_setSprite(..)
+ *  \see VDP_updateSprites(..)
+ */
+void VDP_setSpriteFlipV(u16 index, bool flipV);
+/**
+ *  \brief
+ *      Get sprite horizontal flip (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ */
+bool VDP_getSpriteFlipH(u16 index);
+/**
+ *  \brief
+ *      Get sprite vertical flip (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ */
+bool VDP_getSpriteFlipV(u16 index);
+/**
+ *  \brief
+ *      Set sprite tile index (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ *  \param tile
+ *      Tile index. Valid values: [0, 2047].
+ *
+ *  \see VDP_setSprite(..)
+ *  \see VDP_updateSprites(..)
+ */
+void VDP_setSpriteTile(u16 index, u16 tile);
+/**
+ *  \brief
+ *      Get sprite tile index (use sprite list cache).
+ *
+ *  \param index
+ *      Index of the sprite to modify attributes (should be < SAT_MAX_SIZE).
+ */
+u16 VDP_getSpriteTile(u16 index);
 
 #endif // _VDP_SPR_H_

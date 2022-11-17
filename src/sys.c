@@ -21,6 +21,7 @@
 #include "dma.h"
 #include "sram.h"
 #include "sprite_eng.h"
+#include "task.h"
 
 #include "tools.h"
 #include "kdebug.h"
@@ -55,10 +56,7 @@ typedef union
 } InterruptCaller;
 
 
-// we don't want to share them
-extern u16 randbase;
-extern u16 currentDriver;
-// last V-Counter on VDP_waitVSync() / VDP_waitVInt() call
+// last V-Counter on VDP_waitVSync() / VDP_waitVInt() call (don't want to share it)
 extern u16 lastVCnt;
 
 // extern library callback function (we don't want to share them)
@@ -491,8 +489,7 @@ void _start_entry()
     // initialize "initialized variables"
     memcpyU16(dst, FAR(src), len);
 
-    // initialize random number generator
-    setRandomSeed(0xC427);
+    // reset vtimer
     vtimer = 0;
 
     // default interrupt callback
@@ -650,6 +647,7 @@ static void internal_reset()
     dmaDataBuffer = NULL;
     DMA_init();
     DMA_setMaxTransferSizeToDefault();
+    TSK_init();
     VDP_init();
     PSG_init();
     JOY_init();
@@ -700,19 +698,15 @@ bool SYS_doVBlankProcessEx(VBlankProcessTime processTime)
         u16 dmaSize = DMA_getQueueTransferSize();
 #endif
 
-        // DMA protection for XGM driver
-        if (currentDriver == Z80_DRIVER_XGM)
-        {
-            XGM_set68KBUSProtection(TRUE);
+        // enable bus protection for Z80 before flushing DMA
+        Z80_enableBusProtection();
 
-            // delay enabled ? --> wait a bit to improve PCM playback (test on SOR2)
-            if (XGM_getForceDelayDMA()) waitSubTick(10);
-            DMA_flushQueue();
+        // delay enabled ? --> wait a bit to improve PCM playback (test on SOR2)
+        if (Z80_getForceDelayDMA()) waitSubTick(10);
+        DMA_flushQueue();
 
-            XGM_set68KBUSProtection(FALSE);
-        }
-        else
-            DMA_flushQueue();
+        // can disable bus protection
+        Z80_disableBusProtection();
 
 #if (LIB_LOG_LEVEL >= LOG_LEVEL_WARNING)
         vcnt = GET_VCOUNTER;
@@ -790,10 +784,10 @@ bool SYS_doVBlankProcessEx(VBlankProcessTime processTime)
         }
 
         // write immediately in VRAM the sprite position change
-        vu16* pw = (u16 *) GFX_DATA_PORT;
-        vu32* pl = (u32 *) GFX_CTRL_PORT;
+        vu16* pw = (u16 *) VDP_DATA_PORT;
+        vu32* pl = (u32 *) VDP_CTRL_PORT;
 
-        *pl = GFX_WRITE_VRAM_ADDR(VDP_SPRITE_TABLE);
+        *pl = VDP_WRITE_VRAM_ADDR(VDP_SPRITE_TABLE);
         *pw = vdpSprite->y;
     }
 
@@ -884,6 +878,11 @@ void SYS_setExtIntCallback(VoidCallback *CB)
 }
 
 
+bool SYS_getShowFrameLoad()
+{
+    return (flags & SHOW_FRAME_LOAD)?TRUE:FALSE;
+}
+
 void SYS_showFrameLoad(bool mean)
 {
     if (mean) flags |= (SHOW_FRAME_LOAD | SHOW_FRAME_LOAD_MEAN);
@@ -898,11 +897,11 @@ void SYS_showFrameLoad(bool mean)
     vdpSprite->x = 0x80;
 
     // apply changes immediately in VRAM
-    vu16* pw = (u16 *) GFX_DATA_PORT;
-    vu32* pl = (u32 *) GFX_CTRL_PORT;
+    vu16* pw = (u16 *) VDP_DATA_PORT;
+    vu32* pl = (u32 *) VDP_CTRL_PORT;
 
     // prepare write to sprite #0
-    *pl = GFX_WRITE_VRAM_ADDR(VDP_SPRITE_TABLE);
+    *pl = VDP_WRITE_VRAM_ADDR(VDP_SPRITE_TABLE);
 
     // write fields in correct order
     *pw = vdpSprite->y;
@@ -921,11 +920,11 @@ void SYS_hideFrameLoad()
     vdpSprite->y = 0;
 
     // apply changes immediately in VRAM
-    vu16* pw = (u16 *) GFX_DATA_PORT;
-    vu32* pl = (u32 *) GFX_CTRL_PORT;
+    vu16* pw = (u16 *) VDP_DATA_PORT;
+    vu32* pl = (u32 *) VDP_CTRL_PORT;
 
     // prepare write to sprite #0
-    *pl = GFX_WRITE_VRAM_ADDR(VDP_SPRITE_TABLE);
+    *pl = VDP_WRITE_VRAM_ADDR(VDP_SPRITE_TABLE);
     // no need to write more
     *pw = vdpSprite->y;
 }

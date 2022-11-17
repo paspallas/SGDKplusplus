@@ -13,35 +13,34 @@
 #ifndef _DMA_H_
 #define _DMA_H_
 
-
 /**
  *  \brief
  *      VRAM destination for DMA operation.
  */
-#define DMA_VRAM    0
+#define DMA_VRAM 0
 /**
  *  \brief
  *      CRAM destination for DMA operation.
  */
-#define DMA_CRAM    1
+#define DMA_CRAM 1
 /**
  *  \brief
  *      VSRAM destination for DMA operation.
  */
-#define DMA_VSRAM   2
+#define DMA_VSRAM 2
 
-#define DMA_QUEUE_SIZE_DEFAULT          80
-#define DMA_QUEUE_SIZE_MIN              32
+#define DMA_QUEUE_SIZE_DEFAULT 80
+#define DMA_QUEUE_SIZE_MIN 32
 
-#define DMA_TRANSFER_CAPACITY_NTSC      7200
-#define DMA_TRANSFER_CAPACITY_PAL_LOW   8000
-#define DMA_TRANSFER_CAPACITY_PAL_MAX   15000
+#define DMA_TRANSFER_CAPACITY_NTSC 7200
+#define DMA_TRANSFER_CAPACITY_PAL_LOW 8000
+#define DMA_TRANSFER_CAPACITY_PAL_MAX 15000
 
-#define DMA_BUFFER_SIZE_NTSC            DMA_TRANSFER_CAPACITY_NTSC
-#define DMA_BUFFER_SIZE_PAL_LOW         DMA_TRANSFER_CAPACITY_PAL_LOW
-#define DMA_BUFFER_SIZE_PAL_MAX         (14 * 1024)
-#define DMA_BUFFER_SIZE_MIN             (2 * 1024)
-
+// better to allocate a bit more than DMA capacity
+#define DMA_BUFFER_SIZE_NTSC 8192
+#define DMA_BUFFER_SIZE_PAL_LOW 8192
+#define DMA_BUFFER_SIZE_PAL_MAX (14 * 1024)
+#define DMA_BUFFER_SIZE_MIN (2 * 1024)
 
 /**
  *  \brief
@@ -49,12 +48,11 @@
  */
 typedef enum
 {
-    CPU = 0,            /**< Transfer through the CPU immediately (slower.. useful for testing purpose mainly) */
-    DMA = 1,            /**< Transfer through DMA immediately, using DMA is faster but can lock Z80 execution */
-    DMA_QUEUE = 2,      /**< Put in the DMA queue so it will be transferred at next VBlank. Using DMA is faster but can lock Z80 execution */
-    DMA_QUEUE_COPY = 3  /**< Copy the buffer and put in the DMA queue so it will be transferred at next VBlank. Using DMA is faster but can lock Z80 execution */
+    CPU = 0,           /**< Transfer through the CPU immediately (slower.. useful for testing purpose mainly) */
+    DMA = 1,           /**< Transfer through DMA immediately, using DMA is faster but can lock Z80 execution */
+    DMA_QUEUE = 2,     /**< Put in the DMA queue so it will be transferred at next VBlank. Using DMA is faster but can lock Z80 execution */
+    DMA_QUEUE_COPY = 3 /**< Copy the buffer and put in the DMA queue so it will be transferred at next VBlank. Using DMA is faster but can lock Z80 execution */
 } TransferMethod;
-
 
 /**
  *  \brief
@@ -62,13 +60,12 @@ typedef enum
  */
 typedef struct
 {
-    u16 regLenL;        // (newLen & 0xFF) | 0x9300;
-    u16 regLenH;        // ((newLen >> 8) & 0xFF) | 0x9400;
-    u32 regAddrMStep;   // (((addr << 7) & 0xFF0000) | 0x96008F00) + step;
-    u32 regAddrHAddrL;  // ((addr >> 1) & 0x7F00FF) | 0x97009500;
-    u32 regCtrlWrite;   // GFX_DMA_VRAMCOPY_ADDR(to)
+    u16 regLenL;       // (newLen & 0xFF) | 0x9300;
+    u16 regLenH;       // ((newLen >> 8) & 0xFF) | 0x9400;
+    u32 regAddrMStep;  // (((addr << 7) & 0xFF0000) | 0x96008F00) + step;
+    u32 regAddrHAddrL; // ((addr >> 1) & 0x7F00FF) | 0x97009500;
+    u32 regCtrlWrite;  // VDP_DMA_VRAMCOPY_ADDR(to)
 } DMAOpInfo;
-
 
 /**
  *  \brief
@@ -79,7 +76,7 @@ extern DMAOpInfo *dmaQueues;
  *  \brief
  *      DMA queue structure
  */
-extern u16* dmaDataBuffer;
+extern u16 *dmaDataBuffer;
 
 /**
  *  \brief
@@ -121,7 +118,6 @@ void DMA_initEx(u16 size, u16 capacity, u16 bufferSize);
  *  \see DMA_flushQueue()
  */
 bool DMA_getAutoFlush(void);
-
 
 /**
  *  \brief
@@ -284,7 +280,7 @@ u16 DMA_getQueueTransferSize(void);
  *      Returns NULL if the buffer is full (or not big enough).
  *  \see DMA_releaseTemp(..)
  */
-void* DMA_allocateTemp(u16 len);
+void *DMA_allocateTemp(u16 len);
 /**
  *  \brief
  *      Tool method allowing to release memory previously allocated using #DMA_allocateTemp(..).<br>
@@ -327,7 +323,7 @@ void DMA_releaseTemp(u16 len);
  *      TRUE if the operation succeeded, FALSE otherwise (buffer or queue full).
  *  \see DMA_queueDMA(..)
  */
-bool DMA_transfer(TransferMethod tm, u8 location, void* from, u16 to, u16 len, u16 step);
+bool DMA_transfer(TransferMethod tm, u8 location, void *from, u16 to, u16 len, u16 step);
 
 /**
  *  \brief
@@ -374,7 +370,7 @@ bool DMA_canQueue(u8 location, u16 len);
  *  \see DMA_queueDMA(..)
  *  \see DMA_copyAndQueueDma(..)
  */
-void* DMA_allocateAndQueueDma(u8 location, u16 to, u16 len, u16 step);
+void *DMA_allocateAndQueueDma(u8 location, u16 to, u16 len, u16 step);
 /**
  *  \brief
  *      Same as #DMA_queueDma(..) method except that it first copies the data to transfer through DMA queue into a temporary buffer.<br>
@@ -401,7 +397,7 @@ void* DMA_allocateAndQueueDma(u8 location, u16 to, u16 len, u16 step);
  *  \see DMA_doDma(..)
  *  \see DMA_queueDma(..)
  */
-bool DMA_copyAndQueueDma(u8 location, void* from, u16 to, u16 len, u16 step);
+bool DMA_copyAndQueueDma(u8 location, void *from, u16 to, u16 len, u16 step);
 /**
  *  \brief
  *      Queues the specified DMA transfer operation in the DMA queue.<br>
@@ -427,13 +423,13 @@ bool DMA_copyAndQueueDma(u8 location, void* from, u16 to, u16 len, u16 step);
  *      FALSE if the operation failed (queue is full)
  *  \see DMA_doDma(..)
  */
-bool DMA_queueDma(u8 location, void* from, u16 to, u16 len, u16 step);
+bool DMA_queueDma(u8 location, void *from, u16 to, u16 len, u16 step);
 /**
  *  \brief
  *      Same as #DMA_queueDma(..) method except if doesn't check for 128 KB bank crossing on source
  *  \see #DMA_queueDma(..)
  */
-bool DMA_queueDmaFast(u8 location, void* from, u16 to, u16 len, u16 step);
+bool DMA_queueDmaFast(u8 location, void *from, u16 to, u16 len, u16 step);
 
 /**
  *  \brief
@@ -457,13 +453,13 @@ bool DMA_queueDmaFast(u8 location, void* from, u16 to, u16 len, u16 step);
  *      for specific operation.
  *  \see DMA_queue(..)
  */
-void DMA_doDma(u8 location, void* from, u16 to, u16 len, s16 step);
+void DMA_doDma(u8 location, void *from, u16 to, u16 len, s16 step);
 /**
  *  \brief
  *      Same as #DMA_doDma(..) method except if doesn't check for 128 KB bank crossing on source
  *  \see #DMA_doDma(..)
  */
-void DMA_doDmaFast(u8 location, void* from, u16 to, u16 len, s16 step);
+void DMA_doDmaFast(u8 location, void *from, u16 to, u16 len, s16 step);
 
 /**
  *  \brief
@@ -486,7 +482,7 @@ void DMA_doDmaFast(u8 location, void* from, u16 to, u16 len, s16 step);
  *      By default you should set it to 2 for normal copy operation but you can use different value
  *      for specific operation.
  */
-void DMA_doCPUCopy(u8 location, void* from, u16 to, u16 len, s16 step);
+void DMA_doCPUCopy(u8 location, void *from, u16 to, u16 len, s16 step);
 /**
  *  \brief
  *      Do software (CPU) copy to VDP memory (mainly for testing purpose as it's slower than using DMA)
@@ -502,7 +498,7 @@ void DMA_doCPUCopy(u8 location, void* from, u16 to, u16 len, s16 step);
  *      By default you should set it to 2 for normal copy operation but you can use different value
  *      for specific operation.
  */
-void DMA_doCPUCopyDirect(u32 cmd, void* from, u16 len, s16 step);
+void DMA_doCPUCopyDirect(u32 cmd, void *from, u16 len, s16 step);
 
 /**
  *  \brief
@@ -541,6 +537,5 @@ void DMA_doVRamCopy(u16 from, u16 to, u16 len, s16 step);
  *      Wait current DMA fill/copy operation to complete (same as #VDP_waitDMACompletion())
  */
 void DMA_waitCompletion(void);
-
 
 #endif // _DMA_H_

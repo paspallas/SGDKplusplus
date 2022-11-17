@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>sgdk: vdp_dma.h Source File</title>
+<title>sgdk: memory_base.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/search.js"></script>
@@ -74,49 +74,34 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </div>
 </div>
 <script type="text/javascript">
-  initNavTree('vdp__dma_8h.html','');
+  initNavTree('memory__base_8h.html','');
 </script>
 <div id="doc-content">
 <div class="header">
   <div class="headertitle">
-<div class="title">vdp_dma.h</div>  </div>
+<div class="title">memory_base.h</div>  </div>
 </div>
 <div class="contents">
-<a href="vdp__dma_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 
-<a name="l00011"></a>00011 <span class="preprocessor">#ifndef _VDP_DMA_H_</span>
-<a name="l00012"></a>00012 <span class="preprocessor"></span><span class="preprocessor">#define _VDP_DMA_H_</span>
+<a href="memory__base_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 
+<a name="l00011"></a>00011 <span class="preprocessor">#ifndef _MEMORY_BASE_H_</span>
+<a name="l00012"></a>00012 <span class="preprocessor"></span><span class="preprocessor">#define _MEMORY_BASE_H_</span>
 <a name="l00013"></a>00013 <span class="preprocessor"></span>
-<a name="l00014"></a>00014 
-<a name="l00019"></a><a class="code" href="vdp__dma_8h.html#a2db5006ee755a048fb71f2f4b5e5459f">00019</a> <span class="preprocessor">#define VDP_DMA_VRAM    0</span>
-<a name="l00020"></a>00020 <span class="preprocessor"></span>
-<a name="l00024"></a><a class="code" href="vdp__dma_8h.html#a927a87494710dbb6f066732f3dc4cb1b">00024</a> <span class="preprocessor">#define VDP_DMA_CRAM    1</span>
-<a name="l00025"></a>00025 <span class="preprocessor"></span>
-<a name="l00029"></a><a class="code" href="vdp__dma_8h.html#a69de64e44e5047075b98c0466f3f71d0">00029</a> <span class="preprocessor">#define VDP_DMA_VSRAM   2</span>
+<a name="l00018"></a><a class="code" href="memory__base_8h.html#a408c4c066164afa1b6aa3f804c3d3528">00018</a> <span class="preprocessor">#define ROM      0x00000000</span>
+<a name="l00019"></a>00019 <span class="preprocessor"></span>
+<a name="l00023"></a><a class="code" href="memory__base_8h.html#a60a6bc58d166c2eefc6a59b6c0d172e8">00023</a> <span class="preprocessor">#define RAM      0xE0FF0000</span>
+<a name="l00024"></a>00024 <span class="preprocessor"></span>
+<a name="l00029"></a><a class="code" href="memory__base_8h.html#a6423a880df59733d2d9b509c7718d3a9">00029</a> <span class="preprocessor">#define STACK_SIZE      0x0A00</span>
 <a name="l00030"></a>00030 <span class="preprocessor"></span>
-<a name="l00031"></a>00031 
-<a name="l00035"></a><a class="code" href="vdp__dma_8h.html#a0806f0a5e7e102869a653e0a8d573959">00035</a> <span class="preprocessor">#define VDP_doVRamDMA(from, to, len)            \</span>
-<a name="l00036"></a>00036 <span class="preprocessor">    VDP_doDMA(VDP_DMA_VRAM, from, to, len)</span>
-<a name="l00037"></a>00037 <span class="preprocessor"></span>
-<a name="l00040"></a><a class="code" href="vdp__dma_8h.html#a7144e66717a4dc90d7cfd6700a6d21b2">00040</a> <span class="preprocessor">#define VDP_doCRamDMA(from, to, len)            \</span>
-<a name="l00041"></a>00041 <span class="preprocessor">    VDP_doDMA(VDP_DMA_CRAM, from, to, len)</span>
-<a name="l00042"></a>00042 <span class="preprocessor"></span>
-<a name="l00045"></a><a class="code" href="vdp__dma_8h.html#a3c589aae4a3ac150cdea54e9643643e6">00045</a> <span class="preprocessor">#define VDP_doVSRamDMA(from, to, len)           \</span>
-<a name="l00046"></a>00046 <span class="preprocessor">    VDP_doDMA(VDP_DMA_VSRAM, from, to, len)</span>
-<a name="l00047"></a>00047 <span class="preprocessor"></span>
-<a name="l00048"></a>00048 
-<a name="l00052"></a>00052 <span class="keywordtype">void</span> VDP_doDMAEx(<a class="code" href="types_8h.html#ab9f930ae0484417a1883fd3f7cdb490e">u8</a> location, <a class="code" href="types_8h.html#a449a74b72ed931d627eca7efcc6f8c9d">u32</a> from, <a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> to, <a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> len, <a class="code" href="types_8h.html#ad54124d5ddef23f4d85df6f12e3501a4">s16</a> vramStep);
-<a name="l00056"></a>00056 <span class="keywordtype">void</span> VDP_doDMA(<a class="code" href="types_8h.html#ab9f930ae0484417a1883fd3f7cdb490e">u8</a> location, <a class="code" href="types_8h.html#a449a74b72ed931d627eca7efcc6f8c9d">u32</a> from, <a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> to, <a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> len);
-<a name="l00060"></a>00060 <span class="keywordtype">void</span> VDP_doVRamDMAFill(<a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> to, <a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> len, <a class="code" href="types_8h.html#ab9f930ae0484417a1883fd3f7cdb490e">u8</a> value);
-<a name="l00064"></a>00064 <span class="keywordtype">void</span> VDP_doVRamDMACopy(<a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> from, <a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> to, <a class="code" href="types_8h.html#a8aa9149a22317014c683c48cebd8cfef">u16</a> len);
-<a name="l00065"></a>00065 
-<a name="l00066"></a>00066 
-<a name="l00067"></a>00067 <span class="preprocessor">#endif // _VDP_DMA_H_</span>
+<a name="l00034"></a><a class="code" href="memory__base_8h.html#a88bbbe6208ac1a0cbcc31e190f0c066e">00034</a> <span class="preprocessor">#define MEMORY_HIGH     (0xE1000000 - STACK_SIZE)</span>
+<a name="l00035"></a>00035 <span class="preprocessor"></span>
+<a name="l00036"></a>00036 
+<a name="l00037"></a>00037 <span class="preprocessor">#endif // _MEMORY_BASE_H_</span>
 </pre></div></div>
 </div>
   <div id="nav-path" class="navpath">
     <ul>
-      <li class="navelem"><a class="el" href="vdp__dma_8h.html">vdp_dma.h</a>      </li>
-      <li class="footer">Generated on Mon Feb 7 2022 14:48:00 for sgdk by&#160;
+      <li class="navelem"><a class="el" href="memory__base_8h.html">memory_base.h</a>      </li>
+      <li class="footer">Generated on Tue Oct 11 2022 17:32:35 for sgdk by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </li>
     </ul>

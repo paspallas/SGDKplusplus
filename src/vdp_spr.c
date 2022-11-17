@@ -10,8 +10,8 @@
 #include "memory.h"
 
 
-// important to have a global structure here (consumes 640 bytes of memory)
-VDPSprite vdpSpriteCache[MAX_VDP_SPRITE];
+// important to have a global structure here, 16 used for "overflow" with sprite engine (consumes 768 bytes of memory)
+VDPSprite vdpSpriteCache[SAT_MAX_SIZE + 16];
 // keep trace of last allocated sprite (for special operation as link)
 VDPSprite *lastAllocatedVDPSprite;
 // keep trace of highest index allocated since the last VDP_resetSprites() or VDP_releaseAllSprites.
@@ -19,7 +19,7 @@ VDPSprite *lastAllocatedVDPSprite;
 s16 highestVDPSpriteIndex;
 
 // used for VDP sprite allocation
-static VDPSprite *allocStack[MAX_VDP_SPRITE];
+static VDPSprite *allocStack[SAT_MAX_SIZE];
 // point on top of the allocation stack (first available VDP sprite)
 static VDPSprite **free;
 
@@ -37,10 +37,10 @@ void VDP_releaseAllSprites()
     u16 i;
 
     // reset allocation stack (important that first allocated sprite is sprite 0)
-    for(i = 0; i < MAX_VDP_SPRITE; i++)
-        allocStack[i] = &vdpSpriteCache[(MAX_VDP_SPRITE - 1) - i];
+    for(i = 0; i < SAT_MAX_SIZE; i++)
+        allocStack[i] = &vdpSpriteCache[(SAT_MAX_SIZE - 1) - i];
     // init free position
-    free = &allocStack[MAX_VDP_SPRITE];
+    free = &allocStack[SAT_MAX_SIZE];
 
     highestVDPSpriteIndex = -1;
 }
@@ -130,7 +130,7 @@ u16 VDP_getAvailableSprites()
 s16 VDP_refreshHighestAllocatedSpriteIndex()
 {
     s16 res = -1;
-    VDPSprite **top = &allocStack[MAX_VDP_SPRITE];
+    VDPSprite **top = &allocStack[SAT_MAX_SIZE];
 
     while(top > free)
     {
@@ -231,6 +231,63 @@ void VDP_updateSprites(u16 num, TransferMethod tm)
     }
 
     DMA_transfer(tm, DMA_VRAM, vdpSpriteCache, VDP_SPRITE_TABLE, (sizeof(VDPSprite) * num) / 2, 2);
+}
+
+void VDP_setSpritePriority(u16 index, bool priority)
+{
+    vdpSpriteCache[index].priority = priority;
+}
+
+bool VDP_getSpritePriority(u16 index)
+{
+    return vdpSpriteCache[index].priority == 1;
+}
+
+void VDP_setSpritePalette(u16 index, u16 palette)
+{
+    vdpSpriteCache[index].palette = palette;
+}
+
+u16 VDP_getSpritePalette(u16 index)
+{
+    return vdpSpriteCache[index].palette;
+}
+
+void VDP_setSpriteFlip(u16 index, bool flipH, bool flipV)
+{
+    VDPSprite *sprite = &vdpSpriteCache[index];
+    sprite->flipH = flipH;
+    sprite->flipV = flipV;
+}
+
+void VDP_setSpriteFlipH(u16 index, bool flipH)
+{
+    vdpSpriteCache[index].flipH = flipH;
+}
+
+void VDP_setSpriteFlipV(u16 index, bool flipV)
+{
+    vdpSpriteCache[index].flipH = flipV;
+}
+
+bool VDP_getSpriteFlipH(u16 index)
+{
+    return vdpSpriteCache[index].flipH != 0;
+}
+
+bool VDP_getSpriteFlipV(u16 index)
+{
+    return vdpSpriteCache[index].flipV != 0;
+}
+
+void VDP_setSpriteTile(u16 index, u16 tile)
+{
+    vdpSpriteCache[index].tile = tile;
+}
+
+u16 VDP_getSpriteTile(u16 index)
+{
+    return vdpSpriteCache[index].tile;
 }
 
 void logVDPSprite(u16 index)

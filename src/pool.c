@@ -6,6 +6,9 @@
 #include "memory.h"
 #include "tools.h"
 
+#if ENABLE_CPLUSPLUS == 1
+#include <string.h>
+#endif
 
 Pool* POOL_create(u16 size, u16 objectSize)
 {
@@ -13,13 +16,23 @@ Pool* POOL_create(u16 size, u16 objectSize)
     Pool* result = MEM_alloc(sizeof(Pool));
 
     // error on allocation --> return NULL
-    if (result == NULL) return NULL;
+    if (result == NULL)
+    {
+#if (LIB_LOG_LEVEL >= LOG_LEVEL_ERROR)
+        kprintf("POOL_create(%d, %d) error: not enough memory (free = %d, largest block = %d)", size, objectSize, MEM_getFree() & 0xFFFF, MEM_getLargestFreeBlock() & 0XFFFF);
+#endif
+        return NULL;
+    }
 
     // allocate bank
     result->bank = MEM_alloc(size * objectSize);
     // can't allocate ? --> and return NULL
     if (result->bank == NULL)
     {
+#if (LIB_LOG_LEVEL >= LOG_LEVEL_ERROR)
+        kprintf("POOL_create(%d, %d) error: not enough memory (free = %d, largest block = %d)", size, objectSize, MEM_getFree() & 0xFFFF, MEM_getLargestFreeBlock() & 0XFFFF);
+#endif
+
         // release pool
         MEM_free(result);
 
@@ -32,6 +45,10 @@ Pool* POOL_create(u16 size, u16 objectSize)
     // can't allocate ?
     if (result->allocStack == NULL)
     {
+#if (LIB_LOG_LEVEL >= LOG_LEVEL_ERROR)
+        kprintf("POOL_create(%d, %d) error: not enough memory (free = %d, largest block = %d)", size, objectSize, MEM_getFree() & 0xFFFF, MEM_getLargestFreeBlock() & 0XFFFF);
+#endif
+
         // release bank & pool
         MEM_free(result->bank);
         MEM_free(result);
@@ -39,6 +56,10 @@ Pool* POOL_create(u16 size, u16 objectSize)
         // and return NULL
         return NULL;
     }
+
+#if (LIB_LOG_LEVEL >= LOG_LEVEL_INFO)
+    kprintf("Object pool succefully created - number of object = %d - object size = %d (free memory = %d)", size, objectSize, MEM_getFree() & 0xFFFF);
+#endif
 
     // set size
     result->size = size;
@@ -94,51 +115,85 @@ void POOL_destroy(Pool* pool)
         }
 
         MEM_free(pool);
+
+#if (LIB_LOG_LEVEL >= LOG_LEVEL_INFO)
+        kprintf("Object pool succefully destroyed - number of object = %d - object size = %d (free memory = %d)", pool->size, pool->objectSize, MEM_getFree() & 0xFFFF);
+#endif
     }
 #if (LIB_LOG_LEVEL >= LOG_LEVEL_ERROR)
     else
     {
-        kprintf("OBJ_destroyPool(): error - trying to destroy a not allocated pool !");
+        kprintf("POOL_destroy(): error - trying to destroy a not allocated pool !");
     }
 #endif
 }
 
 
-void* POOL_allocateObject(Pool* pool)
+void* POOL_allocate(Pool* pool)
 {
     // pool is empty ?
     if (pool->free == pool->allocStack)
     {
 #if (LIB_LOG_LEVEL >= LOG_LEVEL_ERROR)
-        KLog("OBJ_allocateObject(): failed - no more available object !");
+        KLog("POOL_allocate(): failed - no more available object !");
 #endif
 
         return NULL;
     }
 
     // allocate object
-    return *--(pool->free);
-}
+    --pool->free;
 
-void POOL_releaseObject(Pool* pool, void* obj)
-{
-#if (LIB_LOG_LEVEL >= LOG_LEVEL_ERROR)
-    if (obj == NULL)
-    {
-        KLog("OBJ_releaseObject(): failed - trying to release a NULL object !");
-        return;
-    }
-
-    // above
-    if (pool->free >= &pool->allocStack[pool->size])
-    {
-        KLog("OBJ_releaseObject(): failed - pool doesn't contain any object !");
-        return;
-    }
+#if (LIB_LOG_LEVEL >= LOG_LEVEL_INFO)
+    kprintf("POOL_allocate: object succefully created at position %d - remaining object = %d", POOL_find(pool, *pool->free), POOL_getFree(pool));
 #endif
 
+    // return it
+    return *pool->free;
+}
+
+void POOL_release(Pool* pool, void* object, bool maintainCoherency)
+{
+#if (LIB_LOG_LEVEL >= LOG_LEVEL_ERROR)
+    if (object == NULL)
+        KLog("POOL_release(): failed - trying to release a NULL object !");
+
+    // empty pool ?
+    if (pool->free >= &pool->allocStack[pool->size])
+        KLog("POOL_release(): failed - pool doesn't contain any object !");
+#endif
+
+#if (LIB_LOG_LEVEL >= LOG_LEVEL_INFO)
+    kprintf("POOL_release: object at position %d released - remaining object = %d", POOL_find(pool, object), POOL_getFree(pool) + 1);
+#endif
+
+    // get previous
+    void* prevObject = *pool->free;
+
     // release object
-    *(pool->free)++ = obj;
+    *pool->free = object;
+    pool->free++;
+
+    // different from the one in place ?
+    if (maintainCoherency && (prevObject != object))
+    {
+        void** s = pool->free;
+        u16 i = POOL_getNumAllocated(pool);
+
+        while(i--)
+        {
+            // found the original object in alloc stack ?
+            if (*s == object)
+            {
+                // replace with the overwritten one so we can use stack iteration
+                *s = prevObject;
+                return;
+            }
+
+            // next
+            s++;
+        }
+    }
 }
 
 
@@ -151,3 +206,28 @@ u16 POOL_getNumAllocated(Pool* pool)
 {
     return pool->size - POOL_getFree(pool);
 }
+
+void** POOL_getFirst(Pool* pool)
+{
+    // free point on last allocated object
+    return pool->free;
+}
+
+s16 POOL_find(Pool* pool, void* object)
+{
+    void** s = pool->free;
+    u16 i = POOL_getNumAllocated(pool);
+
+    while(i--)
+    {
+        // we found the object in alloc stack ? --> return its position
+        if (*s == object)
+            return (pool->size - 1) - (s - pool->allocStack);
+        // next
+        s++;
+    }
+
+    // not found
+    return -1;
+}
+

@@ -24,20 +24,24 @@ static Bitmap *allocateBitmapInternal(void *adr);
 static TileSet *allocateTileSetInternal(void *adr);
 static TileMap *allocateTileMapInternal(void *adr);
 
-// internal
-u16 randbase;
+// default seed (can e done only once so initialized variable is ok)
+static u16 randbase = 0xC427;
+// needed for seed reset on player input
+bool randomSeedSet = FALSE;
 
 
 void setRandomSeed(u16 seed)
 {
     // xor it with a random value to avoid 0 value
     randbase = seed ^ 0xD94B;
+    randomSeedSet = TRUE;
 }
 
 u16 getrandom()
 {
-    randbase ^= (randbase >> 1) ^ GET_HVCOUNTER;
-    randbase ^= (randbase << 1);
+    randbase ^= (randbase >> 5);
+    randbase ^= (randbase << 9);
+    randbase ^= (randbase >> 7);
 
     return randbase;
 }
@@ -976,26 +980,34 @@ Image *allocateImage(const Image *image)
 Map *allocateMap(const MapDefinition *mapDef)
 {
     u16 baseSize = sizeof(Map);
+    u16 compression = mapDef->compression;
+
     u16 metaTilesSize;
     u16 blocksSize;
     u16 blockIndexesSize;
 
-    // need to allocate memory for packed data buffers
-    if (mapDef->compression != COMPRESSION_NONE)
+    // metaTiles compression
+    if (((compression >> 0) & 0xF) != COMPRESSION_NONE) metaTilesSize = mapDef->numMetaTile * 4 * 2;
+    // use direct reference
+    else metaTilesSize = 0;
+
+    // blocks data compression
+    if (((compression >> 4) & 0xF) != COMPRESSION_NONE)
     {
-        metaTilesSize = mapDef->numMetaTile * 4 * 2;
         blocksSize = mapDef->numBlock * 8 * 8;
         if (mapDef->numMetaTile > 256) blocksSize *= 2;
+    }
+    // use direct reference
+    else blocksSize = 0;
+
+    // blocks indexes data compression
+    if (((compression >> 8) & 0xF) != COMPRESSION_NONE)
+    {
         blockIndexesSize = mapDef->w * mapDef->hp;
         if (mapDef->numBlock > 256) blockIndexesSize *= 2;
     }
-    else
-    {
-        // can use direct reference
-        metaTilesSize = 0;
-        blocksSize = 0;
-        blockIndexesSize = 0;
-    }
+    // use direct reference
+    else blockIndexesSize = 0;
 
     const void *adr = MEM_alloc(baseSize + metaTilesSize + blocksSize + blockIndexesSize);
 

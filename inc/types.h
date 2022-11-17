@@ -15,34 +15,34 @@
  *      FALSE define (equivalent to 0).
  */
 #ifndef FALSE
-#define FALSE   0
+#define FALSE 0
 #endif
 /**
  *  \brief
  *      TRUE define (equivalent to 1).
  */
 #ifndef TRUE
-#define TRUE    1
+#define TRUE 1
 #endif
 /**
  *  \brief
  *      NULL define (equivalent to 0).
  */
 #ifndef NULL
-#define NULL    0
+#define NULL 0
 #endif
 
 #ifndef MIN_U8
-#define MIN_U8  0x00
+#define MIN_U8 0x00
 #endif
 #ifndef MAX_U8
-#define MAX_U8  0xFF
+#define MAX_U8 0xFF
 #endif
 #ifndef MIN_S8
-#define MIN_S8  -0x80
+#define MIN_S8 -0x80
 #endif
 #ifndef MAX_S8
-#define MAX_S8  0x7F
+#define MAX_S8 0x7F
 #endif
 
 #ifndef MIN_U16
@@ -112,12 +112,15 @@ typedef unsigned short u16;
  */
 typedef unsigned long u32;
 
-/**
- *  \typedef vbool
- *      volatile boolean type.
- *      (internally set as volatile unsigned short)
- */
-typedef volatile u16 vbool;
+// /**
+//  *  \typedef bool
+//  *      boolean type, to be used with TRUE and FALSE constant.
+//  *      (internally set as unsigned char)
+//  */
+// #ifndef __cplusplus
+// typedef u8 bool;
+// #endif
+
 /**
  *  \typedef vs8
  *      volatile 8 bits signed integer.
@@ -151,18 +154,34 @@ typedef volatile u16 vu16;
 typedef volatile u32 vu32;
 
 #ifndef __cplusplus
+/**
+ *  \typedef vbool
+ *      volatile boolean type.
+ *      (internally set as volatile unsigned char)
+ */
+typedef vu8 vbool;
+
+/**
+ *  \typedef p16
+ *      short pointer for fast 16 bit addressing (GCC does correctly cast that to pointer).
+ *      Limited to 0xFFFF8000-0x00007FFF memory region (first 32KB bank of ROM, and last 32KB of RAM)
+ */
+typedef s16 p16;
+
 #if !defined(uint8_t) && !defined(__int8_t_defined)
-#define uint8_t     u8
-#define int8_t      s8
+#define uint8_t u8
+#define int8_t s8
 #endif
 #if !defined(uint16_t) && !defined(__int16_t_defined)
-#define uint16_t    u16
-#define int16_t     s16
+#define uint16_t u16
+#define int16_t s16
 #endif
 #if !defined(uint32_t) && !defined(__int32_t_defined)
-#define uint32_t    u32
-#define int32_t     s32
+#define uint32_t u32
+#define int32_t s32
 #endif
+#else
+    #include <cstdint>
 #endif
 
 /**
@@ -207,8 +226,6 @@ typedef vs16 vf16;
  */
 typedef vs32 vf32;
 
-
-
 #define FASTCALL
 
 /**
@@ -250,11 +267,9 @@ typedef struct
     u16 ray;
 } Circle;
 
-
 typedef void VoidCallback(void);
 
-
-u8  getZeroU8(void);
+u8 getZeroU8(void);
 u16 getZeroU16(void);
 u32 getZeroU32(void);
 
@@ -267,7 +282,7 @@ u32 getZeroU32(void);
  *  \param number
  *      number of bit rotation
  */
-u8  rol8(u8 value, u16 number);
+u8 rol8(u8 value, u16 number);
 
 /**
  *  \brief
@@ -300,7 +315,7 @@ u32 rol32(u32 value, u16 number);
  *  \param number
  *      number of bit rotation
  */
-u8  ror8(u8 value, u16 number);
+u8 ror8(u8 value, u16 number);
 
 /**
  *  \brief
@@ -323,6 +338,5 @@ u16 ror16(u16 value, u16 number);
  *      number of bit rotation
  */
 u32 ror32(u32 value, u16 number);
-
 
 #endif // _TYPES_H_

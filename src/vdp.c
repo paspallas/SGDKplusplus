@@ -108,7 +108,7 @@ void VDP_init()
     regValues[0x12] = 0x00;                     /* reg 18 - window vpos */
 
     // set registers
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     for (i = 0x00; i < 0x13; i++) *pw = 0x8000 | (i << 8) | regValues[i];
 
     maps_addr = 0;
@@ -133,6 +133,10 @@ void VDP_init()
 void VDP_resetScreen()
 {
     u16 i;
+    bool enable = VDP_isEnable();
+
+    // for faster operation
+    VDP_setEnable(FALSE);
 
     // reset video memory (len = 0 is a special value to define 0x10000)
     DMA_doVRamFill(0, 0, 0, 1);
@@ -164,8 +168,10 @@ void VDP_resetScreen()
     }
 
     // load default font
-    if (!VDP_loadFont(&font_default, CPU))
+    if (!VDP_loadFont(&font_default, DMA))
     {
+        VDP_setEnable(TRUE);
+
         KLog("A fatal error occured (not enough memory to reset VDP) !");
 
         // fatal error --> die here (the font did not get loaded so maybe not really useful to show this message...)
@@ -177,6 +183,10 @@ void VDP_resetScreen()
         // stop here
         while(TRUE);
     }
+
+    // re-enable
+    if (enable)
+        VDP_setEnable(TRUE);
 }
 
 
@@ -300,13 +310,18 @@ void VDP_setReg(u16 reg, u8 value)
 
     if (reg < 0x13) regValues[reg] = v;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8000 | (reg << 8) | v;
 }
 
 bool VDP_getEnable()
 {
     return regValues[0x01] & 0x40;
+}
+
+bool VDP_isEnable()
+{
+    return VDP_getEnable();
 }
 
 void VDP_setEnable(bool value)
@@ -316,7 +331,7 @@ void VDP_setEnable(bool value)
     if (value) regValues[0x01] |= 0x40;
     else regValues[0x01] &= ~0x40;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8100 | regValues[0x01];
 }
 
@@ -339,7 +354,7 @@ void VDP_setScreenHeight224()
     regValues[0x01] &= ~0x08;
     screenHeight = 224;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8100 | regValues[0x01];
 }
 
@@ -352,7 +367,7 @@ void VDP_setScreenHeight240()
         regValues[0x01] |= 0x08;
         screenHeight = 240;
 
-        pw = (u16 *) GFX_CTRL_PORT;
+        pw = (u16 *) VDP_CTRL_PORT;
         *pw = 0x8100 | regValues[0x01];
     }
 }
@@ -371,7 +386,7 @@ void VDP_setScreenWidth256()
     windowWidth = 32;
     windowWidthSft = 5;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8C00 | regValues[0x0C];
 }
 
@@ -384,7 +399,7 @@ void VDP_setScreenWidth320()
     windowWidth = 64;
     windowWidthSft = 6;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8C00 | regValues[0x0C];
 }
 
@@ -460,7 +475,7 @@ void VDP_setPlaneSize(u16 w, u16 h, bool setupVram)
 
     regValues[0x10] = v;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x9000 | regValues[0x10];
 
     if (setupVram)
@@ -524,7 +539,7 @@ void VDP_setScrollingMode(u16 hscroll, u16 vscroll)
     regValues[0x0B] &= ~0x07;
     regValues[0x0B] |= ((vscroll & 1) << 2) | (hscroll & 3);
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8B00 | regValues[0x0B];
 }
 
@@ -540,7 +555,7 @@ void VDP_setBackgroundColor(u8 value)
 
     regValues[0x07] = value & 0x3F;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8700 | regValues[0x07];
 }
 
@@ -556,7 +571,7 @@ void VDP_setAutoInc(u8 value)
 
     regValues[0x0F] = value;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8F00 | value;
 }
 
@@ -573,7 +588,7 @@ void VDP_setDMAEnabled(u8 value)
     if (value) regValues[0x01] |= 0x10;
     else regValues[0x01] &= ~0x10;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8100 | regValues[0x01];
 }
 
@@ -589,7 +604,7 @@ void VDP_setHVLatching(u8 value)
     if (value) regValues[0x00] |= 0x02;
     else regValues[0x00] &= ~0x02;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8000 | regValues[0x00];
 }
 
@@ -600,7 +615,7 @@ void VDP_setHInterrupt(u8 value)
     if (value) regValues[0x00] |= 0x10;
     else regValues[0x00] &= ~0x10;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8000 | regValues[0x00];
 }
 
@@ -611,7 +626,7 @@ void VDP_setExtInterrupt(u8 value)
     if (value) regValues[0x0B] |= 0x08;
     else regValues[0x0B] &= ~0x08;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8B00 | regValues[0x0B];
 }
 
@@ -622,7 +637,7 @@ void VDP_setHilightShadow(u8 value)
     if (value) regValues[0x0C] |= 0x08;
     else regValues[0x0C] &= ~0x08;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8C00 | regValues[0x0C];
 }
 
@@ -638,7 +653,7 @@ void VDP_setHIntCounter(u8 value)
 
     regValues[0x0A] = value;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8A00 | regValues[0x0A];
 }
 
@@ -693,7 +708,7 @@ void VDP_setBGAAddress(u16 value)
 
     regValues[0x02] = bga_addr / 0x400;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8200 | regValues[0x02];
 }
 
@@ -706,7 +721,7 @@ void VDP_setBGBAddress(u16 value)
 
     regValues[0x04] = bgb_addr / 0x2000;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8400 | regValues[0x04];
 }
 
@@ -732,7 +747,7 @@ void VDP_setWindowAddress(u16 value)
 
     regValues[0x03] = window_addr / 0x400;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8300 | regValues[0x03];
 }
 
@@ -753,7 +768,7 @@ void VDP_setSpriteListAddress(u16 value)
 
     regValues[0x05] = slist_addr / 0x200;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8500 | regValues[0x05];
 }
 
@@ -766,7 +781,7 @@ void VDP_setHScrollTableAddress(u16 value)
 
     regValues[0x0D] = hscrl_addr / 0x400;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8D00 | regValues[0x0D];
 }
 
@@ -784,7 +799,7 @@ void VDP_setScanMode(u16 value)
         // interlace mode 2
         regValues[0x0C] |= 0x06;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x8C00 | regValues[0x0C];
 }
 
@@ -798,7 +813,7 @@ void VDP_setWindowHPos(u16 right, u16 pos)
 
     regValues[0x11] = v;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x9100 | v;
 }
 
@@ -812,7 +827,7 @@ void VDP_setWindowVPos(u16 down, u16 pos)
 
     regValues[0x12] = v;
 
-    pw = (u16 *) GFX_CTRL_PORT;
+    pw = (u16 *) VDP_CTRL_PORT;
     *pw = 0x9200 | v;
 }
 
@@ -864,7 +879,7 @@ bool VDP_waitVInt()
 
 bool VDP_waitVBlank(bool forceNext)
 {
-    vu16 *pw = (u16 *) GFX_CTRL_PORT;
+    vu16 *pw = (u16 *) VDP_CTRL_PORT;
 
     // initial frame counter
     const u32 t = vtimer;
@@ -910,7 +925,7 @@ bool VDP_waitVBlank(bool forceNext)
 
 void VDP_waitVActive(bool forceNext)
 {
-    vu16 *pw = (u16 *) GFX_CTRL_PORT;
+    vu16 *pw = (u16 *) VDP_CTRL_PORT;
 
     // we want to wait for next start of VActive ?
     if (forceNext)

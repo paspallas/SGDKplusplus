@@ -2,8 +2,11 @@ package sgdk.rescomp.resource.internal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import sgdk.rescomp.Resource;
+import sgdk.rescomp.resource.Bin;
 import sgdk.rescomp.tool.Util;
 import sgdk.rescomp.type.SpriteCell;
 
@@ -23,8 +26,7 @@ public class VDPSprite extends Resource
         super(id);
 
         if ((offX < 0) || (offX > 255) || (offY < 0) || (offY > 255))
-            throw new IllegalArgumentException(
-                    "Error: sprite '" + id + "' offset X / Y is out of range (< 0 or > 255)");
+            throw new IllegalArgumentException("Error: sprite '" + id + "' offset X / Y is out of range (< 0 or > 255)");
         // if ((offX < -128) || (offX > 127) || (offY < -128) || (offY > 127))
         // throw new IllegalArgumentException(
         // "Error: sprite '" + id + "' offset X / Y is out of range (< -128 or > 127)");
@@ -49,6 +51,14 @@ public class VDPSprite extends Resource
     {
         return ((wt - 1) << 2) | (ht - 1);
     }
+    
+    void internalOutS(StringBuilder outS)
+    {
+        // respect field order: offsetY, offsetYFlip, size, offsetX, offsetXFlip, numTile
+        outS.append("    dc.w    " + ((offsetY << 8) | ((offsetYFlip << 0) & 0xFF)) + "\n");
+        outS.append("    dc.w    " + ((getFormattedSize() << 8) | ((offsetX << 0) & 0xFF)) + "\n");
+        outS.append("    dc.w    " + ((offsetXFlip << 8) | (((ht * wt) << 0) & 0xFF)) + "\n");
+    }
 
     @Override
     public int internalHashCode()
@@ -62,12 +72,17 @@ public class VDPSprite extends Resource
         if (obj instanceof VDPSprite)
         {
             final VDPSprite vdpSprite = (VDPSprite) obj;
-            return (offsetX == vdpSprite.offsetX) && (offsetY == vdpSprite.offsetY) && (wt == vdpSprite.wt)
-                    && (ht == vdpSprite.ht) && (offsetXFlip == vdpSprite.offsetXFlip)
-                    && (offsetYFlip == vdpSprite.offsetYFlip);
+            return (offsetX == vdpSprite.offsetX) && (offsetY == vdpSprite.offsetY) && (wt == vdpSprite.wt) && (ht == vdpSprite.ht)
+                    && (offsetXFlip == vdpSprite.offsetXFlip) && (offsetYFlip == vdpSprite.offsetYFlip);
         }
 
         return false;
+    }
+
+    @Override
+    public List<Bin> getInternalBinResources()
+    {
+        return new ArrayList<>();
     }
 
     @Override
@@ -94,17 +109,14 @@ public class VDPSprite extends Resource
         // FrameVDPSprite structure
         Util.decl(outS, outH, "FrameVDPSprite", id, 2, global);
 
-        // respect VDP sprite field order: (numTile, offsetY, offsetYFlip, size, offsetX, offsetXFlip)
-        outS.append("    dc.w    " + (((ht * wt) << 8) | ((offsetY << 0) & 0xFF)) + "\n");
-        outS.append("    dc.w    " + ((offsetYFlip << 8) | ((getFormattedSize() << 0) & 0xFF)) + "\n");
-        outS.append("    dc.w    " + ((offsetX << 8) | ((offsetXFlip << 0) & 0xFF)) + "\n");
-        // write to binary buffer
-        outB.write(ht * wt);
+        internalOutS(outS);
+        // write to binary buffer, respect field order: offsetY, offsetYFlip, size, offsetX, offsetXFlip, numTile
         outB.write(offsetY);
         outB.write(offsetYFlip);
         outB.write(getFormattedSize());
         outB.write(offsetX);
         outB.write(offsetXFlip);
+        outB.write(ht * wt);
 
         outS.append("\n");
     }

@@ -18,11 +18,12 @@ set DIRS=sample\basics\hello-world ^
     sample\fx\hilight-shadow ^
     sample\fx\scroll\linescroll ^
     sample\joy-test ^
-    sample\megawifi ^
     sample\multitasking ^
     sample\sonic ^
     sample\sound ^
-    sample\xgm-player*
+    sample\xgm-player* ^
+    sample\platformer ^
+    sample\console
 
 for /D %%i in (%DIRS%) do (
     echo "%%i"

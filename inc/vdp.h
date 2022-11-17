@@ -25,17 +25,34 @@
  *  \brief
  *      VDP Data port address.
  */
-#define GFX_DATA_PORT           0xC00000
+#define VDP_DATA_PORT           0xC00000
 /**
  *  \brief
  *      VDP Control port address.
  */
-#define GFX_CTRL_PORT           0xC00004
+#define VDP_CTRL_PORT           0xC00004
 /**
  *  \brief
  *      VDP HV counter port address.
  */
-#define GFX_HVCOUNTER_PORT      0xC00008
+#define VDP_HVCOUNTER_PORT      0xC00008
+
+/**
+ *  \deprecated
+ *      Use #VDP_DATA_PORT instead
+ */
+#define GFX_DATA_PORT           VDP_DATA_PORT
+/**
+ *  \deprecated
+ *      Use #VDP_CTRL_PORT instead
+ */
+#define GFX_CTRL_PORT           VDP_CTRL_PORT
+/**
+ *  \deprecated
+ *      Use #VDP_HVCOUNTER_PORT instead
+ */
+#define GFX_HVCOUNTER_PORT      VDP_HVCOUNTER_PORT
+
 
 /**
  *  \brief
@@ -241,7 +258,7 @@
 #define TILE_FONT_INDEX         (TILE_MAX_NUM - FONT_LEN)
 /**
  *  \brief
- *      Sprite engine base tile index (equal TILE_FONTINDEX if Sprite Engine is not initialized).
+ *      Sprite engine base tile index (equal TILE_FONT_INDEX if Sprite Engine is not initialized).
  */
 #define TILE_SPRITE_INDEX       (TILE_FONT_INDEX - spriteVramSize)
 /**
@@ -295,72 +312,134 @@
  *  \brief
  *      Set VDP command to read specified VRAM address.
  */
-#define GFX_READ_VRAM_ADDR(adr)     (((0x0000 + ((adr) & 0x3FFF)) << 16) + (((adr) >> 14) | 0x00))
+#define VDP_READ_VRAM_ADDR(adr)     (((0x0000 + ((adr) & 0x3FFF)) << 16) + (((adr) >> 14) | 0x00))
 /**
  *  \brief
  *      Set VDP command to read specified CRAM address.
  */
-#define GFX_READ_CRAM_ADDR(adr)     (((0x0000 + ((adr) & 0x7F)) << 16) + 0x20)
+#define VDP_READ_CRAM_ADDR(adr)     (((0x0000 + ((adr) & 0x7F)) << 16) + 0x20)
 /**
  *  \brief
  *      Set VDP command to read specified VSRAM address.
  */
-#define GFX_READ_VSRAM_ADDR(adr)    (((0x0000 + ((adr) & 0x3F)) << 16) + 0x10)
+#define VDP_READ_VSRAM_ADDR(adr)    (((0x0000 + ((adr) & 0x3F)) << 16) + 0x10)
 
 /**
  *  \brief
  *      Set VDP command to write at specified VRAM address.
  */
-#define GFX_WRITE_VRAM_ADDR(adr)    (((0x4000 + ((adr) & 0x3FFF)) << 16) + (((adr) >> 14) | 0x00))
+#define VDP_WRITE_VRAM_ADDR(adr)    (((0x4000 + ((adr) & 0x3FFF)) << 16) + (((adr) >> 14) | 0x00))
 /**
  *  \brief
  *      Set VDP command to write at specified CRAM address.
  */
-#define GFX_WRITE_CRAM_ADDR(adr)    (((0xC000 + ((adr) & 0x7F)) << 16) + 0x00)
+#define VDP_WRITE_CRAM_ADDR(adr)    (((0xC000 + ((adr) & 0x7F)) << 16) + 0x00)
 /**
  *  \brief
  *      Set VDP command to write at specified VSRAM address.
  */
-#define GFX_WRITE_VSRAM_ADDR(adr)   (((0x4000 + ((adr) & 0x3F)) << 16) + 0x10)
+#define VDP_WRITE_VSRAM_ADDR(adr)   (((0x4000 + ((adr) & 0x3F)) << 16) + 0x10)
 
 /**
  *  \brief
  *      Set VDP command to issue a DMA transfert to specified VRAM address.
  */
-#define GFX_DMA_VRAM_ADDR(adr)      (((0x4000 + ((adr) & 0x3FFF)) << 16) + (((adr) >> 14) | 0x80))
+#define VDP_DMA_VRAM_ADDR(adr)      (((0x4000 + ((adr) & 0x3FFF)) << 16) + (((adr) >> 14) | 0x80))
 /**
  *  \brief
  *      Set VDP command to issue a DMA transfert to specified CRAM address.
  */
-#define GFX_DMA_CRAM_ADDR(adr)      (((0xC000 + ((adr) & 0x7F)) << 16) + 0x80)
+#define VDP_DMA_CRAM_ADDR(adr)      (((0xC000 + ((adr) & 0x7F)) << 16) + 0x80)
 /**
  *  \brief
  *      Set VDP command to issue a DMA transfert to specified VSRAM address.
  */
-#define GFX_DMA_VSRAM_ADDR(adr)     (((0x4000 + ((adr) & 0x3F)) << 16) + 0x90)
+#define VDP_DMA_VSRAM_ADDR(adr)     (((0x4000 + ((adr) & 0x3F)) << 16) + 0x90)
 
 /**
  *  \brief
  *      Set VDP command to issue a DMA VRAM copy to specified VRAM address.
  */
-#define GFX_DMA_VRAMCOPY_ADDR(adr)  (((0x4000 + ((adr) & 0x3FFF)) << 16) + (((adr) >> 14) | 0xC0))
+#define VDP_DMA_VRAMCOPY_ADDR(adr)  (((0x4000 + ((adr) & 0x3FFF)) << 16) + (((adr) >> 14) | 0xC0))
 
 /**
  *  \brief
- *      Helper to write in vertical scroll table (same as GFX_WRITE_VSRAM_ADDR).
+ *      Helper to write in vertical scroll table (same as VDP_WRITE_VSRAM_ADDR).
  */
-#define GFX_VERT_SCROLL(adr)        GFX_WRITE_VSRAM_ADDR(adr)
+#define VDP_VERT_SCROLL(adr)        VDP_WRITE_VSRAM_ADDR(adr)
 /**
  *  \brief
- *      Helper to write in horizontal scroll table (same as GFX_WRITE_VRAM_ADDR(VDP_SCROLL_H + adr)).
+ *      Helper to write in horizontal scroll table (same as VDP_WRITE_VRAM_ADDR(VDP_SCROLL_H + adr)).
  */
-#define GFX_HORZ_SCROLL(adr)        GFX_WRITE_VRAM_ADDR(VDP_SCROLL_H + (adr))
+#define VDP_HORZ_SCROLL(adr)        VDP_WRITE_VRAM_ADDR(VDP_SCROLL_H + (adr))
+
+/**
+ *  \deprecated
+ *      Use #VDP_READ_VRAM_ADDR instead
+ */
+#define GFX_READ_VRAM_ADDR(adr)     VDP_READ_VRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_READ_CRAM_ADDR instead
+ */
+#define GFX_READ_CRAM_ADDR(adr)     VDP_READ_CRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_READ_VSRAM_ADDR instead
+ */
+#define GFX_READ_VSRAM_ADDR(adr)    VDP_READ_VSRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_WRITE_VRAM_ADDR instead
+ */
+#define GFX_WRITE_VRAM_ADDR(adr)    VDP_WRITE_VRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_WRITE_CRAM_ADDR instead
+ */
+#define GFX_WRITE_CRAM_ADDR(adr)    VDP_WRITE_CRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_WRITE_VSRAM_ADDR instead
+ */
+#define GFX_WRITE_VSRAM_ADDR(adr)   VDP_WRITE_VSRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_DMA_VRAM_ADDR instead
+ */
+#define GFX_DMA_VRAM_ADDR(adr)      VDP_DMA_VRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_DMA_CRAM_ADDR instead
+ */
+#define GFX_DMA_CRAM_ADDR(adr)      VDP_DMA_CRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_DMA_VSRAM_ADDR instead
+ */
+#define GFX_DMA_VSRAM_ADDR(adr)     VDP_DMA_VSRAM_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_DMA_VRAMCOPY_ADDR instead
+ */
+#define GFX_DMA_VRAMCOPY_ADDR(adr)  VDP_DMA_VRAMCOPY_ADDR(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_VERT_SCROLL instead
+ */
+#define GFX_VERT_SCROLL(adr)        VDP_VERT_SCROLL(adr)
+/**
+ *  \deprecated
+ *      Use #VDP_HORZ_SCROLL instead
+ */
+#define GFX_HORZ_SCROLL(adr)        VDP_HORZ_SCROLL(adr)
+
 
 /**
  *  \brief
  *      Tests VDP status against specified flag (see VDP_XXX_FLAG).
  */
-#define GET_VDP_STATUS(flag)         ((*(vu16*)(GFX_CTRL_PORT)) & (flag))
+#define GET_VDP_STATUS(flag)         ((*(vu16*)(VDP_CTRL_PORT)) & (flag))
 /**
  *  \brief
  *      Tests if current system is a PAL system (50 Hz).
@@ -371,7 +450,7 @@
  *  \brief
  *      Returns HV counter.
  */
-#define GET_HVCOUNTER               (*(vu16*)(GFX_HVCOUNTER_PORT))
+#define GET_HVCOUNTER               (*(vu16*)(VDP_HVCOUNTER_PORT))
 /**
  *  \brief
  *      Returns Horizontal counter.
@@ -498,6 +577,11 @@ void VDP_setReg(u16 reg, u8 value);
  *      Returns VDP enable state.
  */
 bool VDP_getEnable(void);
+/**
+ *  \brief
+ *      Returns VDP enable state.
+ */
+bool VDP_isEnable(void);
 /**
  *  \brief
  *      Set VDP enable state.
@@ -923,7 +1007,7 @@ u16 VDP_getAdjustedVCounter(void);
  * This function actually display the number of time it was called in the last second.<br>
  * i.e: for benchmarking you should call this method only once per frame update.
  *
- * \see #getFPS(..)
+ * \see #SYS_getFPS(..)
  */
 void VDP_showFPS(u16 asFloat);
 /**

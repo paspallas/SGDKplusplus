@@ -1,17 +1,18 @@
 #ifndef _GENESIS_H_
 #define _GENESIS_H_
 
-#define SGDK_VERSION        170
-#define SGDK_VERSION_MINOR  70
-#define SGDK_VERSION_MAJOR  1
+#define SGDK_VERSION 180
+#define SGDK_VERSION_MINOR 80
+#define SGDK_VERSION_MAJOR 1
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "types.h"
 
-#define SGDK            TRUE
+#define SGDK TRUE
 
 #include "config.h"
 #include "asm.h"
@@ -76,6 +77,20 @@ extern "C" {
 #include "ext/mw/megawifi.h"
 #endif
 
+#if (MODULE_FLASHSAVE != 0)
+#include "ext/flash-save/flash.h"
+#include "ext/flash-save/saveman.h"
+#endif
+
+#if (MODULE_CONSOLE != 0)
+#include "ext/console.h"
+#endif
+
+#if (MODULE_FRACTAL != 0)
+#include "ext/fractal/fractal.h"
+#include "ext/fractal/visual_dbg.h"
+#endif
+
 // preserve compatibility with old resources name
 #define logo_lib sgdk_logo
 #define font_lib font_default
@@ -84,6 +99,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif // _GENESIS_H_

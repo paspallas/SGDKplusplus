@@ -2,7 +2,7 @@
 
 #include "asm_mac.i"
 
-# required by the V-Int handler of sega.s boot file (probable need a better way of doing that)
+// required by the V-Int handler of sega.s boot file (probable need a better way of doing that)
     .globl  task_sr
     .globl  task_pc
     .globl  task_regs
@@ -14,22 +14,41 @@
  * Variables needed for the task context switches
  ****************************************************************************/
 
-# User task status register. Initial value of second nibble must be 5 or
-# lower in order for VINT interrupts to fire. First nibble must be 0 in
-# order for the user task to run.
+// User task status register. Initial value of second nibble must be 5 or
+// lower in order for VINT interrupts to fire. First nibble must be 0 in
+// order for the user task to run.
 task_sr: .word 0x0400
 
-# User task program counter
+// User task program counter
 task_pc: .long 0x00000000
 
-# User task registers saved on context switch
+// User task registers saved on context switch
 task_regs: .fill UTSK_REGS_LEN, 1, 0
 
-# Supervisor task lock
+// Supervisor task lock
 task_lock: .word 0
 
 
     .section .text
+
+/**
+ * Initialize the task sub system (reset internal variables).
+ */
+func TSK_init
+        move.w  #0x0400, task_sr
+        move.l  #0x00000000, task_pc
+        move.w  #0x0000, task_lock
+
+        move.w  #(UTSK_REGS_LEN - 1), %d0
+        moveq   #0, %d1
+        move.l  task_regs,%a0
+
+.loop:
+        move.b  %d1, (%a0)+
+        dbra    %d0, .loop
+
+        rts
+
 
 /**
  * Configure the task used as user task. Must be invoked once before calling
@@ -126,6 +145,6 @@ _trap_0:
 
         movem.l (%sp)+, %d2-%d7/%a2-%a6
 
-        # For the pending task to return 0
+        // For the pending task to return 0
         moveq   #0, %d0
         rte
