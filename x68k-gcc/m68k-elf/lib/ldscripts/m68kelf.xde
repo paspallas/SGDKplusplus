@@ -7,7 +7,7 @@ OUTPUT_FORMAT("elf32-m68k", "elf32-m68k",
 	      "elf32-m68k")
 OUTPUT_ARCH(m68k)
 ENTRY(_start)
-SEARCH_DIR("=/f/toolchains/68k/x68k-12.1.0/m68k-elf/lib"); SEARCH_DIR("=/usr/local/lib"); SEARCH_DIR("=/lib"); SEARCH_DIR("=/usr/lib");
+SEARCH_DIR("=/f/devel/nglib/tool/68k-12.2.0/m68k-elf/lib"); SEARCH_DIR("=/usr/local/lib"); SEARCH_DIR("=/lib"); SEARCH_DIR("=/usr/lib");
 SECTIONS
 {
   PROVIDE (__executable_start = SEGMENT_START("text-segment", 0)); . = SEGMENT_START("text-segment", 0) + SIZEOF_HEADERS;

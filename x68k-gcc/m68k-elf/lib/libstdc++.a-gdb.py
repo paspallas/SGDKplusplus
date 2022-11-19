@@ -19,8 +19,8 @@ import gdb
 import os
 import os.path
 
-pythondir = '/f/toolchains/68k/x68k-12.1.0/share/gcc-12.1.0/python'
-libdir = '/f/toolchains/68k/x68k-12.1.0/m68k-elf/lib'
+pythondir = '/f/devel/nglib/tool/68k-12.2.0/share/gcc-12.2.0/python'
+libdir = '/f/devel/nglib/tool/68k-12.2.0/m68k-elf/lib'
 
 # This file might be loaded when there is no current objfile.  This
 # can happen if the user loads it manually.  In this case we don't

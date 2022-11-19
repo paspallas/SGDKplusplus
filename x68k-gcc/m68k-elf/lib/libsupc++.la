@@ -17,7 +17,7 @@ old_library='libsupc++.a'
 inherited_linker_flags=''
 
 # Libraries that this one depends upon.
-dependency_libs=' -L/f/toolchains/68k/compiler/final-gcc/m68k-elf/libstdc++-v3/src -L/f/toolchains/68k/compiler/final-gcc/m68k-elf/libstdc++-v3/src/.libs -L/f/toolchains/68k/compiler/final-gcc/m68k-elf/libstdc++-v3/libsupc++/.libs'
+dependency_libs=' -L/f/devel/nglib/tool/compiler/final-gcc/m68k-elf/libstdc++-v3/src -L/f/devel/nglib/tool/compiler/final-gcc/m68k-elf/libstdc++-v3/src/.libs -L/f/devel/nglib/tool/compiler/final-gcc/m68k-elf/libstdc++-v3/libsupc++/.libs'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''
@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/f/toolchains/68k/x68k-12.1.0/m68k-elf/lib'
+libdir='/f/devel/nglib/tool/68k-12.2.0/m68k-elf/lib'

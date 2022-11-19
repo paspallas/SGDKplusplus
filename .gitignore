@@ -22,7 +22,6 @@
 !**/out/rom.bin
 symbol.txt
 rom_head.bin
-**/Debug
 **/Release
 **/res/*.h
 res/libres.s
